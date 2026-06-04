@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+
+def performance_metrics(returns: pd.Series) -> dict[str, float]:
+    clean = returns.dropna()
+    if clean.empty:
+        return {
+            "ann_return": 0.0,
+            "ann_vol": 0.0,
+            "sharpe": 0.0,
+            "max_drawdown": 0.0,
+            "cvar_5": 0.0,
+        }
+    ann_return = float(clean.mean() * 252)
+    ann_vol = float(clean.std(ddof=0) * np.sqrt(252))
+    sharpe = ann_return / ann_vol if ann_vol > 0 else 0.0
+    equity = (1.0 + clean).cumprod()
+    drawdown = equity / equity.cummax() - 1.0
+    cvar = float(clean[clean <= clean.quantile(0.05)].mean())
+    return {
+        "ann_return": ann_return,
+        "ann_vol": ann_vol,
+        "sharpe": float(sharpe),
+        "max_drawdown": float(drawdown.min()),
+        "cvar_5": cvar,
+    }
+
+
+def regime_metrics(returns: pd.Series, prices: pd.DataFrame) -> pd.DataFrame:
+    market_proxy = prices.pct_change().mean(axis=1).reindex(returns.index).fillna(0.0)
+    vol = market_proxy.rolling(63).std().bfill()
+    regimes = pd.Series("normal", index=returns.index)
+    regimes[market_proxy < market_proxy.quantile(0.25)] = "risk_off"
+    regimes[market_proxy > market_proxy.quantile(0.75)] = "risk_on"
+    regimes[vol > vol.quantile(0.75)] = regimes[vol > vol.quantile(0.75)] + "_high_vol"
+
+    rows = []
+    for regime, regime_returns in returns.groupby(regimes):
+        row = performance_metrics(regime_returns)
+        row["regime"] = regime
+        row["days"] = float(len(regime_returns))
+        rows.append(row)
+    return pd.DataFrame(rows).set_index("regime").sort_index()
+
+
+def bootstrap_bands(
+    returns: pd.Series,
+    samples: int = 500,
+    block: int = 21,
+    seed: int = 11,
+) -> pd.DataFrame:
+    clean = returns.dropna().to_numpy()
+    rng = np.random.default_rng(seed)
+    rows = []
+    if len(clean) < block:
+        return pd.DataFrame()
+    for _ in range(samples):
+        chunks = []
+        while sum(len(chunk) for chunk in chunks) < len(clean):
+            start = rng.integers(0, len(clean) - block + 1)
+            chunks.append(clean[start : start + block])
+        sample = pd.Series(np.concatenate(chunks)[: len(clean)])
+        rows.append(performance_metrics(sample))
+    metrics = pd.DataFrame(rows)
+    return metrics.quantile([0.05, 0.5, 0.95]).rename(index={0.05: "p05", 0.5: "p50", 0.95: "p95"})
