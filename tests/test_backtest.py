@@ -21,5 +21,9 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     expected_columns = {"ann_return", "ann_vol", "sharpe", "max_drawdown", "cvar_5"}
     assert expected_columns <= set(result.summary.columns)
     assert not result.regime_metrics.empty
+    assert not result.sector_exposure.empty
+    assert {"avg_gross_weight", "avg_net_weight", "max_gross_weight", "days_active"} <= set(
+        result.sector_exposure.columns
+    )
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()

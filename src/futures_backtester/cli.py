@@ -48,6 +48,7 @@ def run(
     result.weights.to_csv(output_dir / "weights.csv")
     result.selections.to_csv(output_dir / "walk_forward_selections.csv", index=False)
     result.regime_metrics.to_csv(output_dir / "regime_metrics.csv")
+    result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
 
     equity = (1.0 + result.returns).cumprod()
@@ -61,6 +62,7 @@ def run(
     plt.close(fig)
 
     summary = result.summary.iloc[0]
+    top_sector = result.sector_exposure.iloc[0]
     report = (
         "# Research Report\n\n"
         "Synthetic global futures trend and carry backtest.\n\n"
@@ -68,7 +70,9 @@ def run(
         f"- Annualized volatility: {summary['ann_vol']:.2%}\n"
         f"- Sharpe: {summary['sharpe']:.2f}\n"
         f"- Maximum drawdown: {summary['max_drawdown']:.2%}\n"
-        f"- CVaR 5%: {summary['cvar_5']:.2%}\n\n"
+        f"- CVaR 5%: {summary['cvar_5']:.2%}\n"
+        f"- Largest average sector gross weight: {top_sector.name} "
+        f"({top_sector['avg_gross_weight']:.2f})\n\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

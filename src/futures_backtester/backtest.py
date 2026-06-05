@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from futures_backtester.analytics import bootstrap_bands, performance_metrics, regime_metrics
+from futures_backtester.analytics import (
+    bootstrap_bands,
+    performance_metrics,
+    regime_metrics,
+    sector_exposure_summary,
+)
 from futures_backtester.data import FuturesPanel, make_sample_panel
 from futures_backtester.portfolio import apply_vol_target, net_strategy_returns, risk_parity_weights
 from futures_backtester.signals import blended_signal, daily_returns, realized_vol
@@ -28,6 +33,7 @@ class BacktestResult:
     selections: pd.DataFrame
     summary: pd.DataFrame
     regime_metrics: pd.DataFrame
+    sector_exposure: pd.DataFrame
     bootstrap_bands: pd.DataFrame
 
 
@@ -105,5 +111,6 @@ def run_backtest(
         selections=pd.DataFrame(selections),
         summary=summary,
         regime_metrics=regime_metrics(live, panel.prices),
+        sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
     )

@@ -40,6 +40,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/daily_returns.csv`
 - `reports/generated/weights.csv`
 - `reports/generated/regime_metrics.csv`
+- `reports/generated/sector_exposure.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
@@ -68,6 +69,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Walk-forward parameter selection over trend/carry blends and lookbacks.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, maximum drawdown, CVaR, and annualized return.
+- Sector exposure summaries to make concentration and diversification review
+  reproducible from each generated run.
 
 The generated outputs use synthetic data and should not be interpreted as
 evidence of live-market profitability.

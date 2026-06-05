@@ -46,6 +46,21 @@ def regime_metrics(returns: pd.Series, prices: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("regime").sort_index()
 
 
+def sector_exposure_summary(weights: pd.DataFrame, sectors: pd.Series) -> pd.DataFrame:
+    sector_map = sectors.reindex(weights.columns).fillna("unknown")
+    gross_by_sector = weights.abs().T.groupby(sector_map).sum().T
+    net_by_sector = weights.T.groupby(sector_map).sum().T
+    summary = pd.DataFrame(
+        {
+            "avg_gross_weight": gross_by_sector.mean(),
+            "avg_net_weight": net_by_sector.mean(),
+            "max_gross_weight": gross_by_sector.max(),
+            "days_active": (gross_by_sector > 0.0).sum(),
+        }
+    )
+    return summary.sort_values("avg_gross_weight", ascending=False).rename_axis("sector")
+
+
 def bootstrap_bands(
     returns: pd.Series,
     samples: int = 500,
