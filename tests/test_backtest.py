@@ -25,5 +25,14 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert {"avg_gross_weight", "avg_net_weight", "max_gross_weight", "days_active"} <= set(
         result.sector_exposure.columns
     )
+    assert {
+        "avg_gross_weight",
+        "avg_max_contract_gross_share",
+        "max_contract_gross_share",
+        "avg_top_5_gross_share",
+        "avg_hhi",
+        "effective_contract_count",
+    } <= set(result.concentration.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
+    assert np.isfinite(result.concentration.to_numpy()).all()

@@ -61,6 +61,29 @@ def sector_exposure_summary(weights: pd.DataFrame, sectors: pd.Series) -> pd.Dat
     return summary.sort_values("avg_gross_weight", ascending=False).rename_axis("sector")
 
 
+def concentration_summary(weights: pd.DataFrame) -> pd.DataFrame:
+    gross = weights.abs()
+    gross_total = gross.sum(axis=1).replace(0.0, np.nan)
+    gross_share = gross.div(gross_total, axis=0).fillna(0.0)
+    hhi = gross_share.pow(2).sum(axis=1)
+    top_5_share = gross_share.apply(lambda row: row.nlargest(min(5, len(row))).sum(), axis=1)
+    avg_hhi = float(hhi.mean())
+    effective_contract_count = float(1.0 / avg_hhi) if avg_hhi > 0.0 else 0.0
+
+    return pd.DataFrame(
+        [
+            {
+                "avg_gross_weight": float(gross_total.fillna(0.0).mean()),
+                "avg_max_contract_gross_share": float(gross_share.max(axis=1).mean()),
+                "max_contract_gross_share": float(gross_share.max(axis=1).max()),
+                "avg_top_5_gross_share": float(top_5_share.mean()),
+                "avg_hhi": avg_hhi,
+                "effective_contract_count": effective_contract_count,
+            }
+        ]
+    )
+
+
 def bootstrap_bands(
     returns: pd.Series,
     samples: int = 500,

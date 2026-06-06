@@ -49,6 +49,7 @@ def run(
     result.selections.to_csv(output_dir / "walk_forward_selections.csv", index=False)
     result.regime_metrics.to_csv(output_dir / "regime_metrics.csv")
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
+    result.concentration.to_csv(output_dir / "concentration.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
 
     equity = (1.0 + result.returns).cumprod()
@@ -63,6 +64,7 @@ def run(
 
     summary = result.summary.iloc[0]
     top_sector = result.sector_exposure.iloc[0]
+    concentration = result.concentration.iloc[0]
     report = (
         "# Research Report\n\n"
         "Synthetic global futures trend and carry backtest.\n\n"
@@ -72,7 +74,9 @@ def run(
         f"- Maximum drawdown: {summary['max_drawdown']:.2%}\n"
         f"- CVaR 5%: {summary['cvar_5']:.2%}\n"
         f"- Largest average sector gross weight: {top_sector.name} "
-        f"({top_sector['avg_gross_weight']:.2f})\n\n"
+        f"({top_sector['avg_gross_weight']:.2f})\n"
+        f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"
+        f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

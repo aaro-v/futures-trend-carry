@@ -27,4 +27,5 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
     assert (out_dir / "sector_exposure.csv").exists()
+    assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "research_report.md").exists()

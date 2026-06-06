@@ -41,6 +41,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/weights.csv`
 - `reports/generated/regime_metrics.csv`
 - `reports/generated/sector_exposure.csv`
+- `reports/generated/concentration.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
@@ -71,6 +72,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   Sharpe, maximum drawdown, CVaR, and annualized return.
 - Sector exposure summaries to make concentration and diversification review
   reproducible from each generated run.
+- Contract concentration diagnostics, including top-5 gross exposure share,
+  HHI, and effective contract count.
 
 The generated outputs use synthetic data and should not be interpreted as
 evidence of live-market profitability.
