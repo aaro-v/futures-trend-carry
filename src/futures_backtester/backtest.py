@@ -7,6 +7,7 @@ import pandas as pd
 from futures_backtester.analytics import (
     bootstrap_bands,
     concentration_summary,
+    execution_cost_summary,
     performance_metrics,
     regime_metrics,
     sector_exposure_summary,
@@ -36,6 +37,7 @@ class BacktestResult:
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
     concentration: pd.DataFrame
+    execution_costs: pd.DataFrame
     bootstrap_bands: pd.DataFrame
 
 
@@ -115,5 +117,11 @@ def run_backtest(
         regime_metrics=regime_metrics(live, panel.prices),
         sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
         concentration=concentration_summary(stitched_weights.loc[live.index]),
+        execution_costs=execution_cost_summary(
+            stitched_weights.loc[live.index],
+            panel.roll_cost_bps,
+            panel.commission_bps,
+            settings.slippage_bps,
+        ),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
     )

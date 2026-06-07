@@ -50,6 +50,7 @@ def run(
     result.regime_metrics.to_csv(output_dir / "regime_metrics.csv")
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
+    result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
 
     equity = (1.0 + result.returns).cumprod()
@@ -65,6 +66,7 @@ def run(
     summary = result.summary.iloc[0]
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
+    execution_costs = result.execution_costs.iloc[0]
     report = (
         "# Research Report\n\n"
         "Synthetic global futures trend and carry backtest.\n\n"
@@ -77,6 +79,11 @@ def run(
         f"({top_sector['avg_gross_weight']:.2f})\n"
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"
         f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n\n"
+        "Execution diagnostics:\n\n"
+        f"- Annualized turnover: {execution_costs['annualized_turnover']:.1f}x\n"
+        f"- Annualized roll cost: {execution_costs['ann_roll_cost']:.2%}\n"
+        f"- Annualized trade cost: {execution_costs['ann_trade_cost']:.2%}\n"
+        f"- Annualized total cost: {execution_costs['ann_total_cost']:.2%}\n\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

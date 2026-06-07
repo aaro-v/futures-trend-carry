@@ -33,6 +33,17 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "avg_hhi",
         "effective_contract_count",
     } <= set(result.concentration.columns)
+    assert {
+        "avg_daily_turnover",
+        "annualized_turnover",
+        "ann_roll_cost",
+        "ann_commission_cost",
+        "ann_slippage_cost",
+        "ann_trade_cost",
+        "ann_total_cost",
+        "max_daily_cost",
+    } <= set(result.execution_costs.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
     assert np.isfinite(result.concentration.to_numpy()).all()
+    assert np.isfinite(result.execution_costs.to_numpy()).all()

@@ -84,6 +84,44 @@ def concentration_summary(weights: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def execution_cost_summary(
+    weights: pd.DataFrame,
+    roll_cost_bps: pd.DataFrame,
+    commission_bps: pd.Series,
+    slippage_bps: float,
+) -> pd.DataFrame:
+    aligned_roll_costs = roll_cost_bps.reindex(
+        index=weights.index,
+        columns=weights.columns,
+    ).fillna(0.0)
+    aligned_commissions = commission_bps.reindex(weights.columns).fillna(0.0)
+
+    prior_weights = weights.shift(1).fillna(0.0)
+    turnover = weights.diff().abs()
+    turnover.iloc[0] = weights.iloc[0].abs()
+
+    roll_cost = (prior_weights.abs() * aligned_roll_costs / 10_000.0).sum(axis=1)
+    commission_cost = (turnover * aligned_commissions / 10_000.0).sum(axis=1)
+    slippage_cost = turnover.sum(axis=1) * slippage_bps / 10_000.0
+    trade_cost = commission_cost + slippage_cost
+    total_cost = roll_cost + trade_cost
+
+    return pd.DataFrame(
+        [
+            {
+                "avg_daily_turnover": float(turnover.sum(axis=1).mean()),
+                "annualized_turnover": float(turnover.sum(axis=1).mean() * 252),
+                "ann_roll_cost": float(roll_cost.mean() * 252),
+                "ann_commission_cost": float(commission_cost.mean() * 252),
+                "ann_slippage_cost": float(slippage_cost.mean() * 252),
+                "ann_trade_cost": float(trade_cost.mean() * 252),
+                "ann_total_cost": float(total_cost.mean() * 252),
+                "max_daily_cost": float(total_cost.max()),
+            }
+        ]
+    )
+
+
 def bootstrap_bands(
     returns: pd.Series,
     samples: int = 500,
