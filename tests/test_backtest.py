@@ -18,7 +18,16 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert not result.returns.empty
     assert result.weights.shape[0] == len(result.returns)
     assert not result.selections.empty
-    expected_columns = {"ann_return", "ann_vol", "sharpe", "max_drawdown", "cvar_5"}
+    expected_columns = {
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "downside_vol",
+        "sortino",
+        "max_drawdown",
+        "calmar",
+        "cvar_5",
+    }
     assert expected_columns <= set(result.summary.columns)
     assert not result.regime_metrics.empty
     assert not result.sector_exposure.empty

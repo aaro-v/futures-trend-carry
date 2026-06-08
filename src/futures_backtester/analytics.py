@@ -11,20 +11,31 @@ def performance_metrics(returns: pd.Series) -> dict[str, float]:
             "ann_return": 0.0,
             "ann_vol": 0.0,
             "sharpe": 0.0,
+            "downside_vol": 0.0,
+            "sortino": 0.0,
             "max_drawdown": 0.0,
+            "calmar": 0.0,
             "cvar_5": 0.0,
         }
     ann_return = float(clean.mean() * 252)
     ann_vol = float(clean.std(ddof=0) * np.sqrt(252))
     sharpe = ann_return / ann_vol if ann_vol > 0 else 0.0
+    downside = clean.clip(upper=0.0)
+    downside_vol = float(np.sqrt(np.square(downside).mean()) * np.sqrt(252))
+    sortino = ann_return / downside_vol if downside_vol > 0 else 0.0
     equity = (1.0 + clean).cumprod()
     drawdown = equity / equity.cummax() - 1.0
+    max_drawdown = float(drawdown.min())
+    calmar = ann_return / abs(max_drawdown) if max_drawdown < 0.0 else 0.0
     cvar = float(clean[clean <= clean.quantile(0.05)].mean())
     return {
         "ann_return": ann_return,
         "ann_vol": ann_vol,
         "sharpe": float(sharpe),
-        "max_drawdown": float(drawdown.min()),
+        "downside_vol": downside_vol,
+        "sortino": float(sortino),
+        "max_drawdown": max_drawdown,
+        "calmar": float(calmar),
         "cvar_5": cvar,
     }
 

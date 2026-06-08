@@ -30,3 +30,6 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "research_report.md").exists()
+    report = (out_dir / "research_report.md").read_text(encoding="utf-8")
+    assert "Sortino" in report
+    assert "Calmar" in report

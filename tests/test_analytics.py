@@ -1,7 +1,48 @@
 import numpy as np
 import pandas as pd
 
-from futures_backtester.analytics import concentration_summary, execution_cost_summary
+from futures_backtester.analytics import (
+    concentration_summary,
+    execution_cost_summary,
+    performance_metrics,
+)
+
+
+def test_performance_metrics_include_downside_risk_ratios() -> None:
+    returns = pd.Series([0.01, -0.02, 0.015, -0.005, 0.003])
+
+    metrics = performance_metrics(returns)
+
+    assert {
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "downside_vol",
+        "sortino",
+        "max_drawdown",
+        "calmar",
+        "cvar_5",
+    } == set(metrics)
+    assert metrics["downside_vol"] > 0.0
+    assert np.isfinite(metrics["sortino"])
+    assert np.isfinite(metrics["calmar"])
+
+
+def test_performance_metrics_keep_zero_ratios_without_drawdown_or_downside_vol() -> None:
+    metrics = performance_metrics(pd.Series([0.001, 0.002, 0.0015]))
+
+    assert metrics["downside_vol"] == 0.0
+    assert metrics["sortino"] == 0.0
+    assert metrics["max_drawdown"] == 0.0
+    assert metrics["calmar"] == 0.0
+
+
+def test_performance_metrics_measure_constant_loss_downside_vol() -> None:
+    metrics = performance_metrics(pd.Series([-0.01, -0.01, -0.01]))
+
+    assert metrics["ann_vol"] == 0.0
+    assert metrics["downside_vol"] > 0.0
+    assert metrics["sortino"] < 0.0
 
 
 def test_concentration_summary_handles_zero_exposure() -> None:

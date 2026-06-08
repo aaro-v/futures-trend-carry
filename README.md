@@ -70,7 +70,7 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   risk parity, turnover-aware execution costs, roll costs, and slippage.
 - Walk-forward parameter selection over trend/carry blends and lookbacks.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
-  Sharpe, maximum drawdown, CVaR, and annualized return.
+  Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
 - Sector exposure summaries to make concentration and diversification review
   reproducible from each generated run.
 - Contract concentration diagnostics, including top-5 gross exposure share,
