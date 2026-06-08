@@ -47,6 +47,15 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
 
+## Sample Results
+
+The chart below is produced with `futures-backtest run --output-dir reports/generated`
+from deterministic synthetic futures data. It is a reproducibility artifact for
+reviewing signal construction, walk-forward selection, sizing, costs, and
+reporting, not a live-market performance claim.
+
+![Synthetic trend and carry futures equity curve](reports/generated/equity_curve.png)
+
 For a faster smoke run:
 
 ```bash
@@ -80,3 +89,17 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 
 The generated outputs use synthetic data and should not be interpreted as
 evidence of live-market profitability.
+
+## Project Layout
+
+```text
+src/futures_backtester/
+  data/          Synthetic futures universe and panel serialization
+  signals/       Trend, carry, volatility, and blended signal logic
+  portfolio/     Risk parity, volatility targeting, and cost-aware returns
+  backtesting/   Walk-forward engine and analytics summaries
+  reporting/     Reserved package boundary for report-specific expansion
+  cli.py         Typer command line interface
+tests/           Unit and CLI coverage for each layer
+reports/         Reproducible generated research artifacts
+```

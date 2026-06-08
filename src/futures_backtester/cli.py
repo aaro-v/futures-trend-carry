@@ -6,7 +6,7 @@ from typing import Annotated
 import matplotlib.pyplot as plt
 import typer
 
-from futures_backtester.backtest import BacktestSettings, run_backtest
+from futures_backtester.backtesting.engine import BacktestSettings, run_backtest
 from futures_backtester.data import make_sample_panel, panel_to_frame
 
 app = typer.Typer(help="Trend and carry global futures backtester.")
