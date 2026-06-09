@@ -3,6 +3,7 @@ import pandas as pd
 
 from futures_backtester.analytics import (
     concentration_summary,
+    drawdown_summary,
     execution_cost_summary,
     performance_metrics,
 )
@@ -43,6 +44,39 @@ def test_performance_metrics_measure_constant_loss_downside_vol() -> None:
     assert metrics["ann_vol"] == 0.0
     assert metrics["downside_vol"] > 0.0
     assert metrics["sortino"] < 0.0
+
+
+def test_drawdown_summary_ranks_recovered_episodes_by_depth() -> None:
+    returns = pd.Series(
+        [0.05, -0.10, 0.02, 0.10, -0.03, 0.04],
+        index=pd.date_range("2024-01-01", periods=6),
+    )
+
+    summary = drawdown_summary(returns)
+
+    assert list(summary.columns) == [
+        "start",
+        "trough",
+        "recovery",
+        "depth",
+        "length_days",
+        "recovery_days",
+    ]
+    assert len(summary) == 2
+    assert summary.loc[0, "depth"] < summary.loc[1, "depth"]
+    assert summary.loc[0, "length_days"] == 3
+    assert summary.loc[0, "recovery_days"] == 3
+
+
+def test_drawdown_summary_marks_unrecovered_episode() -> None:
+    returns = pd.Series([0.02, -0.05, -0.02], index=pd.date_range("2024-01-01", periods=3))
+
+    summary = drawdown_summary(returns)
+
+    assert len(summary) == 1
+    assert pd.isna(summary.loc[0, "recovery"])
+    assert pd.isna(summary.loc[0, "recovery_days"])
+    assert summary.loc[0, "length_days"] == 2
 
 
 def test_concentration_summary_handles_zero_exposure() -> None:

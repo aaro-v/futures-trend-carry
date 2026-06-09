@@ -42,6 +42,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/regime_metrics.csv`
 - `reports/generated/sector_exposure.csv`
 - `reports/generated/concentration.csv`
+- `reports/generated/drawdowns.csv`
 - `reports/generated/execution_costs.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/equity_curve.png`
@@ -84,6 +85,7 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   reproducible from each generated run.
 - Contract concentration diagnostics, including top-5 gross exposure share,
   HHI, and effective contract count.
+- Drawdown episode diagnostics covering depth, length, trough, and recovery.
 - Turnover and execution cost diagnostics split across roll, commission, and
   slippage drag.
 

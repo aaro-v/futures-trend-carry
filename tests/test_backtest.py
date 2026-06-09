@@ -43,6 +43,14 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "effective_contract_count",
     } <= set(result.concentration.columns)
     assert {
+        "start",
+        "trough",
+        "recovery",
+        "depth",
+        "length_days",
+        "recovery_days",
+    } <= set(result.drawdowns.columns)
+    assert {
         "avg_daily_turnover",
         "annualized_turnover",
         "ann_roll_cost",
@@ -55,4 +63,5 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
     assert np.isfinite(result.concentration.to_numpy()).all()
+    assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()

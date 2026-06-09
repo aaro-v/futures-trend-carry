@@ -1,6 +1,7 @@
 from futures_backtester.backtesting.analytics import (
     bootstrap_bands,
     concentration_summary,
+    drawdown_summary,
     execution_cost_summary,
     performance_metrics,
     regime_metrics,
@@ -10,6 +11,7 @@ from futures_backtester.backtesting.analytics import (
 __all__ = [
     "bootstrap_bands",
     "concentration_summary",
+    "drawdown_summary",
     "execution_cost_summary",
     "performance_metrics",
     "regime_metrics",

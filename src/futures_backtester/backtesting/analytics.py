@@ -40,6 +40,67 @@ def performance_metrics(returns: pd.Series) -> dict[str, float]:
     }
 
 
+def drawdown_summary(returns: pd.Series, top_n: int = 5) -> pd.DataFrame:
+    columns = ["start", "trough", "recovery", "depth", "length_days", "recovery_days"]
+    clean = returns.dropna()
+    if clean.empty:
+        return pd.DataFrame(columns=columns)
+
+    equity = (1.0 + clean).cumprod()
+    running_peak = equity.cummax()
+    drawdown = equity / running_peak - 1.0
+    underwater = drawdown < 0.0
+
+    rows = []
+    in_episode = False
+    start = clean.index[0]
+    trough = clean.index[0]
+    depth = 0.0
+    for date, is_underwater in underwater.items():
+        if is_underwater and not in_episode:
+            in_episode = True
+            start = date
+            trough = date
+            depth = float(drawdown.loc[date])
+        elif is_underwater:
+            if drawdown.loc[date] < depth:
+                trough = date
+                depth = float(drawdown.loc[date])
+        elif in_episode:
+            rows.append(
+                {
+                    "start": start,
+                    "trough": trough,
+                    "recovery": date,
+                    "depth": depth,
+                    "length_days": len(clean.loc[start:date]),
+                    "recovery_days": len(clean.loc[trough:date]),
+                }
+            )
+            in_episode = False
+
+    if in_episode:
+        rows.append(
+            {
+                "start": start,
+                "trough": trough,
+                "recovery": pd.NaT,
+                "depth": depth,
+                "length_days": len(clean.loc[start:]),
+                "recovery_days": pd.NA,
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+    return (
+        pd.DataFrame(rows, columns=columns)
+        .sort_values("depth")
+        .head(top_n)
+        .reset_index(drop=True)
+    )
+
+
 def regime_metrics(returns: pd.Series, prices: pd.DataFrame) -> pd.DataFrame:
     market_proxy = prices.pct_change().mean(axis=1).reindex(returns.index).fillna(0.0)
     vol = market_proxy.rolling(63).std().bfill()
