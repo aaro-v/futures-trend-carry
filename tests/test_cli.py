@@ -31,7 +31,11 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "research_report.md").exists()
+    selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
+    assert "test_sharpe" in selections
+    assert "test_max_drawdown" in selections
     report = (out_dir / "research_report.md").read_text(encoding="utf-8")
     assert "Sortino" in report
     assert "Calmar" in report
+    assert "Walk-forward validation" in report
     assert "Drawdown diagnostics" in report

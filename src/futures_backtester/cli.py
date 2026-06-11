@@ -69,6 +69,8 @@ def run(
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     execution_costs = result.execution_costs.iloc[0]
+    avg_test_sharpe = result.selections["test_sharpe"].mean()
+    avg_test_drawdown = result.selections["test_max_drawdown"].mean()
     drawdown_line = (
         f"- Worst drawdown episode: {worst_drawdown['depth']:.2%} "
         f"over {int(worst_drawdown['length_days'])} trading days\n"
@@ -90,6 +92,9 @@ def run(
         f"({top_sector['avg_gross_weight']:.2f})\n"
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"
         f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n\n"
+        "Walk-forward validation:\n\n"
+        f"- Average selected-window test Sharpe: {avg_test_sharpe:.2f}\n"
+        f"- Average selected-window test max drawdown: {avg_test_drawdown:.2%}\n\n"
         "Drawdown diagnostics:\n\n"
         f"{drawdown_line}\n"
         "Execution diagnostics:\n\n"

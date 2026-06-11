@@ -100,6 +100,7 @@ def run_backtest(
         }
         best = max(scores, key=scores.get)
         best_returns, best_weights = candidates[best]
+        test_metrics = performance_metrics(best_returns.iloc[test_slice])
         stitched_returns.iloc[test_slice] = best_returns.iloc[test_slice]
         stitched_weights.iloc[test_slice, :] = best_weights.iloc[test_slice, :]
         selections.append(
@@ -109,6 +110,9 @@ def run_backtest(
                 "trend_lookback": best[0],
                 "carry_weight": best[1],
                 "train_sharpe": scores[best],
+                "test_ann_return": test_metrics["ann_return"],
+                "test_sharpe": test_metrics["sharpe"],
+                "test_max_drawdown": test_metrics["max_drawdown"],
             }
         )
         start = test_end

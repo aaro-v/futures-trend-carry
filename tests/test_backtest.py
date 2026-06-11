@@ -18,6 +18,16 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert not result.returns.empty
     assert result.weights.shape[0] == len(result.returns)
     assert not result.selections.empty
+    assert {
+        "start",
+        "end",
+        "trend_lookback",
+        "carry_weight",
+        "train_sharpe",
+        "test_ann_return",
+        "test_sharpe",
+        "test_max_drawdown",
+    } <= set(result.selections.columns)
     expected_columns = {
         "ann_return",
         "ann_vol",
@@ -62,6 +72,11 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     } <= set(result.execution_costs.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
+    assert np.isfinite(
+        result.selections[["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]]
+        .to_numpy()
+        .astype(float)
+    ).all()
     assert np.isfinite(result.concentration.to_numpy()).all()
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
