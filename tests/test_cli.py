@@ -30,6 +30,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
+    assert (out_dir / "walk_forward_summary.csv").exists()
     assert (out_dir / "research_report.md").exists()
     selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
     assert "test_sharpe" in selections
@@ -38,4 +39,5 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Sortino" in report
     assert "Calmar" in report
     assert "Walk-forward validation" in report
+    assert "Train-to-test Sharpe degradation" in report
     assert "Drawdown diagnostics" in report

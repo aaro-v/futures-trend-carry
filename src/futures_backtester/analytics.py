@@ -6,6 +6,7 @@ from futures_backtester.backtesting.analytics import (
     performance_metrics,
     regime_metrics,
     sector_exposure_summary,
+    walk_forward_summary,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "performance_metrics",
     "regime_metrics",
     "sector_exposure_summary",
+    "walk_forward_summary",
 ]

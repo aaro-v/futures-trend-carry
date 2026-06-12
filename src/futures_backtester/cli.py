@@ -52,6 +52,7 @@ def run(
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
+    result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
 
     equity = (1.0 + result.returns).cumprod()
@@ -69,8 +70,7 @@ def run(
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     execution_costs = result.execution_costs.iloc[0]
-    avg_test_sharpe = result.selections["test_sharpe"].mean()
-    avg_test_drawdown = result.selections["test_max_drawdown"].mean()
+    walk_forward = result.walk_forward_summary.iloc[0]
     drawdown_line = (
         f"- Worst drawdown episode: {worst_drawdown['depth']:.2%} "
         f"over {int(worst_drawdown['length_days'])} trading days\n"
@@ -93,8 +93,15 @@ def run(
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"
         f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n\n"
         "Walk-forward validation:\n\n"
-        f"- Average selected-window test Sharpe: {avg_test_sharpe:.2f}\n"
-        f"- Average selected-window test max drawdown: {avg_test_drawdown:.2%}\n\n"
+        f"- Windows evaluated: {walk_forward['windows']:.0f}\n"
+        f"- Unique selected parameter sets: {walk_forward['unique_parameter_sets']:.0f}\n"
+        f"- Most common selection: {walk_forward['most_common_trend_lookback']:.0f}-day trend, "
+        f"{walk_forward['most_common_carry_weight']:.2f} carry weight\n"
+        f"- Average train Sharpe: {walk_forward['avg_train_sharpe']:.2f}\n"
+        f"- Average test Sharpe: {walk_forward['avg_test_sharpe']:.2f}\n"
+        f"- Train-to-test Sharpe degradation: {walk_forward['sharpe_degradation']:.2f}\n"
+        f"- Positive test Sharpe windows: {walk_forward['positive_test_sharpe_rate']:.0%}\n"
+        f"- Worst selected-window test drawdown: {walk_forward['worst_test_max_drawdown']:.2%}\n\n"
         "Drawdown diagnostics:\n\n"
         f"{drawdown_line}\n"
         "Execution diagnostics:\n\n"

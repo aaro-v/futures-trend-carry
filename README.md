@@ -44,6 +44,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/concentration.csv`
 - `reports/generated/drawdowns.csv`
 - `reports/generated/execution_costs.csv`
+- `reports/generated/walk_forward_summary.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
@@ -79,6 +80,9 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Vectorized weight construction with volatility targeting, inverse-volatility
   risk parity, turnover-aware execution costs, roll costs, and slippage.
 - Walk-forward parameter selection over trend/carry blends and lookbacks.
+- Walk-forward stability diagnostics covering selected parameter diversity,
+  train/test Sharpe decay, positive test-window rate, and selected-window
+  drawdown severity.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
 - Sector exposure summaries to make concentration and diversification review

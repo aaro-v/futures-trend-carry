@@ -12,6 +12,7 @@ from futures_backtester.backtesting.analytics import (
     performance_metrics,
     regime_metrics,
     sector_exposure_summary,
+    walk_forward_summary,
 )
 from futures_backtester.data import FuturesPanel, make_sample_panel
 from futures_backtester.portfolio.construction import (
@@ -44,6 +45,7 @@ class BacktestResult:
     concentration: pd.DataFrame
     drawdowns: pd.DataFrame
     execution_costs: pd.DataFrame
+    walk_forward_summary: pd.DataFrame
     bootstrap_bands: pd.DataFrame
 
 
@@ -134,5 +136,6 @@ def run_backtest(
             panel.commission_bps,
             settings.slippage_bps,
         ),
+        walk_forward_summary=walk_forward_summary(pd.DataFrame(selections)),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
     )

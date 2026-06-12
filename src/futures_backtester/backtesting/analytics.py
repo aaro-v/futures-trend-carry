@@ -194,6 +194,53 @@ def execution_cost_summary(
     )
 
 
+def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "windows",
+        "unique_parameter_sets",
+        "most_common_trend_lookback",
+        "most_common_carry_weight",
+        "avg_train_sharpe",
+        "avg_test_sharpe",
+        "sharpe_degradation",
+        "positive_test_sharpe_rate",
+        "avg_test_max_drawdown",
+        "worst_test_max_drawdown",
+    ]
+    if selections.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    parameter_sets = selections[["trend_lookback", "carry_weight"]].drop_duplicates()
+    most_common_params = (
+        selections.groupby(["trend_lookback", "carry_weight"], sort=True)
+        .size()
+        .rename("count")
+        .reset_index()
+        .sort_values(["count", "trend_lookback", "carry_weight"], ascending=[False, True, True])
+        .iloc[0]
+    )
+    avg_train_sharpe = float(selections["train_sharpe"].mean())
+    avg_test_sharpe = float(selections["test_sharpe"].mean())
+
+    return pd.DataFrame(
+        [
+            {
+                "windows": float(len(selections)),
+                "unique_parameter_sets": float(len(parameter_sets)),
+                "most_common_trend_lookback": float(most_common_params["trend_lookback"]),
+                "most_common_carry_weight": float(most_common_params["carry_weight"]),
+                "avg_train_sharpe": avg_train_sharpe,
+                "avg_test_sharpe": avg_test_sharpe,
+                "sharpe_degradation": avg_train_sharpe - avg_test_sharpe,
+                "positive_test_sharpe_rate": float((selections["test_sharpe"] > 0.0).mean()),
+                "avg_test_max_drawdown": float(selections["test_max_drawdown"].mean()),
+                "worst_test_max_drawdown": float(selections["test_max_drawdown"].min()),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def bootstrap_bands(
     returns: pd.Series,
     samples: int = 500,

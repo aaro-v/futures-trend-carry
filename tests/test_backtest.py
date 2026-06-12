@@ -70,6 +70,18 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "ann_total_cost",
         "max_daily_cost",
     } <= set(result.execution_costs.columns)
+    assert {
+        "windows",
+        "unique_parameter_sets",
+        "most_common_trend_lookback",
+        "most_common_carry_weight",
+        "avg_train_sharpe",
+        "avg_test_sharpe",
+        "sharpe_degradation",
+        "positive_test_sharpe_rate",
+        "avg_test_max_drawdown",
+        "worst_test_max_drawdown",
+    } <= set(result.walk_forward_summary.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
     assert np.isfinite(
@@ -80,3 +92,4 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.concentration.to_numpy()).all()
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
+    assert np.isfinite(result.walk_forward_summary.to_numpy()).all()

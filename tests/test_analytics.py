@@ -6,6 +6,7 @@ from futures_backtester.analytics import (
     drawdown_summary,
     execution_cost_summary,
     performance_metrics,
+    walk_forward_summary,
 )
 
 
@@ -136,3 +137,29 @@ def test_execution_cost_summary_separates_roll_and_trade_costs() -> None:
     assert summary.loc[0, "ann_roll_cost"] > 0.0
     assert summary.loc[0, "ann_trade_cost"] > summary.loc[0, "ann_commission_cost"]
     assert summary.loc[0, "ann_total_cost"] > summary.loc[0, "ann_trade_cost"]
+
+
+def test_walk_forward_summary_reports_selection_stability() -> None:
+    selections = pd.DataFrame(
+        {
+            "trend_lookback": [63, 63, 126],
+            "carry_weight": [0.5, 0.5, 0.0],
+            "train_sharpe": [1.2, 0.8, 0.4],
+            "test_sharpe": [0.6, -0.2, 0.3],
+            "test_max_drawdown": [-0.03, -0.08, -0.05],
+        }
+    )
+
+    summary = walk_forward_summary(selections)
+
+    assert summary.loc[0, "windows"] == 3.0
+    assert summary.loc[0, "unique_parameter_sets"] == 2.0
+    assert summary.loc[0, "most_common_trend_lookback"] == 63.0
+    assert summary.loc[0, "most_common_carry_weight"] == 0.5
+    assert summary.loc[0, "avg_train_sharpe"] == selections["train_sharpe"].mean()
+    assert summary.loc[0, "avg_test_sharpe"] == selections["test_sharpe"].mean()
+    assert summary.loc[0, "sharpe_degradation"] == (
+        selections["train_sharpe"].mean() - selections["test_sharpe"].mean()
+    )
+    assert summary.loc[0, "positive_test_sharpe_rate"] == 2 / 3
+    assert summary.loc[0, "worst_test_max_drawdown"] == -0.08
