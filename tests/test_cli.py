@@ -39,5 +39,6 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Sortino" in report
     assert "Calmar" in report
     assert "Walk-forward validation" in report
+    assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
     assert "Drawdown diagnostics" in report

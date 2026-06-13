@@ -200,6 +200,9 @@ def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
         "unique_parameter_sets",
         "most_common_trend_lookback",
         "most_common_carry_weight",
+        "parameter_switch_rate",
+        "avg_trend_lookback_change",
+        "avg_carry_weight_change",
         "avg_train_sharpe",
         "avg_test_sharpe",
         "sharpe_degradation",
@@ -211,6 +214,8 @@ def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
 
     parameter_sets = selections[["trend_lookback", "carry_weight"]].drop_duplicates()
+    parameter_changes = selections[["trend_lookback", "carry_weight"]].diff().iloc[1:]
+    switched = parameter_changes.ne(0.0).any(axis=1)
     most_common_params = (
         selections.groupby(["trend_lookback", "carry_weight"], sort=True)
         .size()
@@ -229,6 +234,17 @@ def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
                 "unique_parameter_sets": float(len(parameter_sets)),
                 "most_common_trend_lookback": float(most_common_params["trend_lookback"]),
                 "most_common_carry_weight": float(most_common_params["carry_weight"]),
+                "parameter_switch_rate": float(switched.mean()) if not switched.empty else 0.0,
+                "avg_trend_lookback_change": (
+                    float(parameter_changes["trend_lookback"].abs().mean())
+                    if not parameter_changes.empty
+                    else 0.0
+                ),
+                "avg_carry_weight_change": (
+                    float(parameter_changes["carry_weight"].abs().mean())
+                    if not parameter_changes.empty
+                    else 0.0
+                ),
                 "avg_train_sharpe": avg_train_sharpe,
                 "avg_test_sharpe": avg_test_sharpe,
                 "sharpe_degradation": avg_train_sharpe - avg_test_sharpe,

@@ -156,6 +156,9 @@ def test_walk_forward_summary_reports_selection_stability() -> None:
     assert summary.loc[0, "unique_parameter_sets"] == 2.0
     assert summary.loc[0, "most_common_trend_lookback"] == 63.0
     assert summary.loc[0, "most_common_carry_weight"] == 0.5
+    assert summary.loc[0, "parameter_switch_rate"] == 0.5
+    assert summary.loc[0, "avg_trend_lookback_change"] == 31.5
+    assert summary.loc[0, "avg_carry_weight_change"] == 0.25
     assert summary.loc[0, "avg_train_sharpe"] == selections["train_sharpe"].mean()
     assert summary.loc[0, "avg_test_sharpe"] == selections["test_sharpe"].mean()
     assert summary.loc[0, "sharpe_degradation"] == (

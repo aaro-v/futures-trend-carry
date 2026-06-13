@@ -81,8 +81,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   risk parity, turnover-aware execution costs, roll costs, and slippage.
 - Walk-forward parameter selection over trend/carry blends and lookbacks.
 - Walk-forward stability diagnostics covering selected parameter diversity,
-  train/test Sharpe decay, positive test-window rate, and selected-window
-  drawdown severity.
+  parameter switching, train/test Sharpe decay, positive test-window rate, and
+  selected-window drawdown severity.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
 - Sector exposure summaries to make concentration and diversification review
