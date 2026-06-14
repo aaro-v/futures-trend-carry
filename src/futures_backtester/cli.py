@@ -1,15 +1,44 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Annotated
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import typer
 
 from futures_backtester.backtesting.engine import BacktestSettings, run_backtest
 from futures_backtester.data import make_sample_panel, panel_to_frame
 
 app = typer.Typer(help="Trend and carry global futures backtester.")
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _artifact_manifest(output_dir: Path, artifact_names: list[str]) -> pd.DataFrame:
+    rows = []
+    for name in artifact_names:
+        path = output_dir / name
+        row = {
+            "artifact": name,
+            "bytes": path.stat().st_size,
+            "sha256": _sha256(path),
+            "rows": pd.NA,
+            "columns": pd.NA,
+        }
+        if path.suffix == ".csv":
+            table = pd.read_csv(path)
+            row["rows"] = len(table)
+            row["columns"] = len(table.columns)
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
 @app.command()
@@ -54,6 +83,19 @@ def run(
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
+    artifact_names = [
+        "summary.csv",
+        "daily_returns.csv",
+        "weights.csv",
+        "walk_forward_selections.csv",
+        "regime_metrics.csv",
+        "sector_exposure.csv",
+        "concentration.csv",
+        "drawdowns.csv",
+        "execution_costs.csv",
+        "walk_forward_summary.csv",
+        "bootstrap_bands.csv",
+    ]
 
     equity = (1.0 + result.returns).cumprod()
     fig, ax = plt.subplots(figsize=(9, 4.8))
@@ -64,6 +106,7 @@ def run(
     fig.tight_layout()
     fig.savefig(output_dir / "equity_curve.png", dpi=160)
     plt.close(fig)
+    artifact_names.append("equity_curve.png")
 
     summary = result.summary.iloc[0]
     top_sector = result.sector_exposure.iloc[0]
@@ -116,4 +159,9 @@ def run(
         "for engineering review, not live-market performance claims.\n"
     )
     (output_dir / "research_report.md").write_text(report, encoding="utf-8")
+    artifact_names.append("research_report.md")
+    _artifact_manifest(output_dir, artifact_names).to_csv(
+        output_dir / "output_manifest.csv",
+        index=False,
+    )
     typer.echo(f"Wrote artifacts to {output_dir}")

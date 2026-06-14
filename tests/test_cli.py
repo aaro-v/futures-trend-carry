@@ -1,3 +1,4 @@
+import pandas as pd
 from typer.testing import CliRunner
 
 from futures_backtester.cli import app
@@ -31,7 +32,31 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
+    assert (out_dir / "output_manifest.csv").exists()
     assert (out_dir / "research_report.md").exists()
+    manifest = pd.read_csv(out_dir / "output_manifest.csv")
+    assert {
+        "artifact",
+        "bytes",
+        "sha256",
+        "rows",
+        "columns",
+    } == set(manifest.columns)
+    assert {
+        "summary.csv",
+        "daily_returns.csv",
+        "weights.csv",
+        "walk_forward_selections.csv",
+        "equity_curve.png",
+        "research_report.md",
+    } <= set(manifest["artifact"])
+    assert manifest["artifact"].is_unique
+    assert manifest["sha256"].str.fullmatch(r"[0-9a-f]{64}").all()
+    summary_row = manifest.set_index("artifact").loc["summary.csv"]
+    assert summary_row["rows"] == 1
+    assert summary_row["columns"] >= 8
+    image_row = manifest.set_index("artifact").loc["equity_curve.png"]
+    assert pd.isna(image_row["rows"])
     selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
     assert "test_sharpe" in selections
     assert "test_max_drawdown" in selections

@@ -48,6 +48,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
+- `reports/generated/output_manifest.csv`
 
 ## Sample Results
 
@@ -92,6 +93,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Drawdown episode diagnostics covering depth, length, trough, and recovery.
 - Turnover and execution cost diagnostics split across roll, commission, and
   slippage drag.
+- Deterministic output manifests with byte sizes, SHA-256 checksums, and CSV
+  dimensions for generated research artifacts.
 
 The generated outputs use synthetic data and should not be interpreted as
 evidence of live-market profitability.
