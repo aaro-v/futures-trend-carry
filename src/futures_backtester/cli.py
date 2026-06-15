@@ -73,6 +73,7 @@ def run(
     result = run_backtest(panel, settings)
 
     result.summary.to_csv(output_dir / "summary.csv", index=False)
+    result.rolling_metrics.to_csv(output_dir / "rolling_metrics.csv")
     result.returns.to_frame().to_csv(output_dir / "daily_returns.csv")
     result.weights.to_csv(output_dir / "weights.csv")
     result.selections.to_csv(output_dir / "walk_forward_selections.csv", index=False)
@@ -85,6 +86,7 @@ def run(
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
     artifact_names = [
         "summary.csv",
+        "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
@@ -114,11 +116,19 @@ def run(
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     execution_costs = result.execution_costs.iloc[0]
     walk_forward = result.walk_forward_summary.iloc[0]
+    rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
     drawdown_line = (
         f"- Worst drawdown episode: {worst_drawdown['depth']:.2%} "
         f"over {int(worst_drawdown['length_days'])} trading days\n"
         if worst_drawdown is not None
         else "- Worst drawdown episode: none observed\n"
+    )
+    rolling_line = (
+        f"- Latest {int(rolling['window_days'])}-day rolling Sharpe "
+        f"({int(rolling['observations'])} observations): {rolling['sharpe']:.2f} "
+        f"with {rolling['max_drawdown']:.2%} max drawdown\n"
+        if rolling is not None
+        else "- Latest rolling Sharpe: unavailable for this sample length\n"
     )
     report = (
         "# Research Report\n\n"
@@ -131,6 +141,7 @@ def run(
         f"- Maximum drawdown: {summary['max_drawdown']:.2%}\n"
         f"- Calmar: {summary['calmar']:.2f}\n"
         f"- CVaR 5%: {summary['cvar_5']:.2%}\n"
+        f"{rolling_line}"
         f"- Largest average sector gross weight: {top_sector.name} "
         f"({top_sector['avg_gross_weight']:.2f})\n"
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"

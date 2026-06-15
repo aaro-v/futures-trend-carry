@@ -6,6 +6,7 @@ from futures_backtester.analytics import (
     drawdown_summary,
     execution_cost_summary,
     performance_metrics,
+    rolling_metrics,
     walk_forward_summary,
 )
 
@@ -45,6 +46,31 @@ def test_performance_metrics_measure_constant_loss_downside_vol() -> None:
     assert metrics["ann_vol"] == 0.0
     assert metrics["downside_vol"] > 0.0
     assert metrics["sortino"] < 0.0
+
+
+def test_rolling_metrics_emit_time_varying_risk_diagnostics() -> None:
+    returns = pd.Series(
+        [0.01, -0.02, 0.03, -0.01, 0.02],
+        index=pd.date_range("2024-01-01", periods=5),
+    )
+
+    summary = rolling_metrics(returns, window=3, min_periods=2)
+
+    assert list(summary.columns) == [
+        "window_days",
+        "observations",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    ]
+    assert list(summary.index) == list(returns.index[1:])
+    assert summary.loc[returns.index[1], "observations"] == 2.0
+    assert summary.loc[returns.index[-1], "observations"] == 3.0
+    assert summary.loc[returns.index[-1], "window_days"] == 3.0
+    expected_last = performance_metrics(returns.iloc[-3:])
+    assert summary.loc[returns.index[-1], "sharpe"] == expected_last["sharpe"]
+    assert summary.loc[returns.index[-1], "max_drawdown"] == expected_last["max_drawdown"]
 
 
 def test_drawdown_summary_ranks_recovered_episodes_by_depth() -> None:

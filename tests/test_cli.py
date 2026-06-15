@@ -25,6 +25,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
 
     assert result.exit_code == 0, result.output
     assert (out_dir / "summary.csv").exists()
+    assert (out_dir / "rolling_metrics.csv").exists()
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
     assert (out_dir / "sector_exposure.csv").exists()
@@ -44,6 +45,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     } == set(manifest.columns)
     assert {
         "summary.csv",
+        "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
@@ -55,6 +57,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     summary_row = manifest.set_index("artifact").loc["summary.csv"]
     assert summary_row["rows"] == 1
     assert summary_row["columns"] >= 8
+    rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
+    assert rolling_row["rows"] >= 1
+    assert rolling_row["columns"] == 7
     image_row = manifest.set_index("artifact").loc["equity_curve.png"]
     assert pd.isna(image_row["rows"])
     selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
@@ -63,6 +68,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     report = (out_dir / "research_report.md").read_text(encoding="utf-8")
     assert "Sortino" in report
     assert "Calmar" in report
+    assert "rolling Sharpe" in report
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report

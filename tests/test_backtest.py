@@ -39,6 +39,15 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "cvar_5",
     }
     assert expected_columns <= set(result.summary.columns)
+    assert {
+        "window_days",
+        "observations",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    } <= set(result.rolling_metrics.columns)
+    assert not result.rolling_metrics.empty
     assert not result.regime_metrics.empty
     assert not result.sector_exposure.empty
     assert {"avg_gross_weight", "avg_net_weight", "max_gross_weight", "days_active"} <= set(
@@ -87,6 +96,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     } <= set(result.walk_forward_summary.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert np.isfinite(result.summary.to_numpy()).all()
+    assert np.isfinite(result.rolling_metrics.to_numpy()).all()
     assert np.isfinite(
         result.selections[["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]]
         .to_numpy()

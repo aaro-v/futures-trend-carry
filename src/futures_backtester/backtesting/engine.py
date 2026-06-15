@@ -11,6 +11,7 @@ from futures_backtester.backtesting.analytics import (
     execution_cost_summary,
     performance_metrics,
     regime_metrics,
+    rolling_metrics,
     sector_exposure_summary,
     walk_forward_summary,
 )
@@ -32,6 +33,8 @@ class BacktestSettings:
     target_vol: float = 0.12
     slippage_bps: float = 0.75
     bootstrap_samples: int = 500
+    rolling_window: int = 252
+    rolling_min_periods: int = 63
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,7 @@ class BacktestResult:
     weights: pd.DataFrame
     selections: pd.DataFrame
     summary: pd.DataFrame
+    rolling_metrics: pd.DataFrame
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
     concentration: pd.DataFrame
@@ -126,6 +130,11 @@ def run_backtest(
         weights=stitched_weights.loc[live.index],
         selections=pd.DataFrame(selections),
         summary=summary,
+        rolling_metrics=rolling_metrics(
+            live,
+            window=settings.rolling_window,
+            min_periods=settings.rolling_min_periods,
+        ),
         regime_metrics=regime_metrics(live, panel.prices),
         sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
         concentration=concentration_summary(stitched_weights.loc[live.index]),

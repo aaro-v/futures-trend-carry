@@ -118,6 +118,45 @@ def regime_metrics(returns: pd.Series, prices: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("regime").sort_index()
 
 
+def rolling_metrics(
+    returns: pd.Series,
+    window: int = 252,
+    min_periods: int = 63,
+) -> pd.DataFrame:
+    columns = [
+        "window_days",
+        "observations",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    ]
+    clean = returns.dropna()
+    if clean.empty or min_periods <= 0:
+        return pd.DataFrame(columns=columns).rename_axis("end_date")
+
+    rows = []
+    lookback = max(window, min_periods)
+    for end_position in range(min_periods, len(clean) + 1):
+        window_returns = clean.iloc[max(0, end_position - lookback) : end_position]
+        metrics = performance_metrics(window_returns)
+        rows.append(
+            {
+                "end_date": clean.index[end_position - 1],
+                "window_days": float(window),
+                "observations": float(len(window_returns)),
+                "ann_return": metrics["ann_return"],
+                "ann_vol": metrics["ann_vol"],
+                "sharpe": metrics["sharpe"],
+                "max_drawdown": metrics["max_drawdown"],
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame(columns=columns).rename_axis("end_date")
+    return pd.DataFrame(rows).set_index("end_date")[columns]
+
+
 def sector_exposure_summary(weights: pd.DataFrame, sectors: pd.Series) -> pd.DataFrame:
     sector_map = sectors.reindex(weights.columns).fillna("unknown")
     gross_by_sector = weights.abs().T.groupby(sector_map).sum().T

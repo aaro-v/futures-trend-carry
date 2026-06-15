@@ -37,6 +37,7 @@ contracts with volatility targeting and risk parity, applies correlation-based
 portfolio scaling, subtracts roll and execution costs, and writes:
 
 - `reports/generated/summary.csv`
+- `reports/generated/rolling_metrics.csv`
 - `reports/generated/daily_returns.csv`
 - `reports/generated/weights.csv`
 - `reports/generated/regime_metrics.csv`
@@ -86,6 +87,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   selected-window drawdown severity.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
+- Rolling out-of-sample risk diagnostics for time-varying annualized return,
+  volatility, Sharpe, and drawdown review.
 - Sector exposure summaries to make concentration and diversification review
   reproducible from each generated run.
 - Contract concentration diagnostics, including top-5 gross exposure share,
