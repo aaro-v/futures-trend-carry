@@ -233,6 +233,58 @@ def execution_cost_summary(
     )
 
 
+def execution_cost_by_contract(
+    weights: pd.DataFrame,
+    roll_cost_bps: pd.DataFrame,
+    commission_bps: pd.Series,
+    slippage_bps: float,
+) -> pd.DataFrame:
+    columns = [
+        "avg_abs_weight",
+        "avg_daily_turnover",
+        "annualized_turnover",
+        "ann_roll_cost",
+        "ann_commission_cost",
+        "ann_slippage_cost",
+        "ann_trade_cost",
+        "ann_total_cost",
+        "max_daily_cost",
+    ]
+    if weights.empty:
+        return pd.DataFrame(columns=columns).rename_axis("contract")
+
+    aligned_roll_costs = roll_cost_bps.reindex(
+        index=weights.index,
+        columns=weights.columns,
+    ).fillna(0.0)
+    aligned_commissions = commission_bps.reindex(weights.columns).fillna(0.0)
+
+    prior_weights = weights.shift(1).fillna(0.0)
+    turnover = weights.diff().abs()
+    turnover.iloc[0] = weights.iloc[0].abs()
+
+    roll_cost = prior_weights.abs() * aligned_roll_costs / 10_000.0
+    commission_cost = turnover.mul(aligned_commissions, axis=1) / 10_000.0
+    slippage_cost = turnover * slippage_bps / 10_000.0
+    trade_cost = commission_cost + slippage_cost
+    total_cost = roll_cost + trade_cost
+
+    summary = pd.DataFrame(
+        {
+            "avg_abs_weight": weights.abs().mean(),
+            "avg_daily_turnover": turnover.mean(),
+            "annualized_turnover": turnover.mean() * 252,
+            "ann_roll_cost": roll_cost.mean() * 252,
+            "ann_commission_cost": commission_cost.mean() * 252,
+            "ann_slippage_cost": slippage_cost.mean() * 252,
+            "ann_trade_cost": trade_cost.mean() * 252,
+            "ann_total_cost": total_cost.mean() * 252,
+            "max_daily_cost": total_cost.max(),
+        }
+    )
+    return summary[columns].sort_values("ann_total_cost", ascending=False).rename_axis("contract")
+
+
 def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
     columns = [
         "windows",

@@ -80,6 +80,18 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "max_daily_cost",
     } <= set(result.execution_costs.columns)
     assert {
+        "avg_abs_weight",
+        "avg_daily_turnover",
+        "annualized_turnover",
+        "ann_roll_cost",
+        "ann_commission_cost",
+        "ann_slippage_cost",
+        "ann_trade_cost",
+        "ann_total_cost",
+        "max_daily_cost",
+    } <= set(result.execution_costs_by_contract.columns)
+    assert result.execution_costs_by_contract.index.name == "contract"
+    assert {
         "windows",
         "unique_parameter_sets",
         "most_common_trend_lookback",
@@ -105,4 +117,5 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.concentration.to_numpy()).all()
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
+    assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()

@@ -82,6 +82,7 @@ def run(
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
+    result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
     artifact_names = [
@@ -95,6 +96,7 @@ def run(
         "concentration.csv",
         "drawdowns.csv",
         "execution_costs.csv",
+        "execution_costs_by_contract.csv",
         "walk_forward_summary.csv",
         "bootstrap_bands.csv",
     ]
@@ -115,6 +117,11 @@ def run(
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     execution_costs = result.execution_costs.iloc[0]
+    top_contract_cost = (
+        result.execution_costs_by_contract.iloc[0]
+        if not result.execution_costs_by_contract.empty
+        else None
+    )
     walk_forward = result.walk_forward_summary.iloc[0]
     rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
     drawdown_line = (
@@ -129,6 +136,13 @@ def run(
         f"with {rolling['max_drawdown']:.2%} max drawdown\n"
         if rolling is not None
         else "- Latest rolling Sharpe: unavailable for this sample length\n"
+    )
+    contract_cost_line = (
+        f"- Highest annualized contract cost: {top_contract_cost.name} "
+        f"({top_contract_cost['ann_total_cost']:.2%}, "
+        f"{top_contract_cost['annualized_turnover']:.1f}x turnover)\n"
+        if top_contract_cost is not None
+        else "- Highest annualized contract cost: unavailable\n"
     )
     report = (
         "# Research Report\n\n"
@@ -166,6 +180,8 @@ def run(
         f"- Annualized roll cost: {execution_costs['ann_roll_cost']:.2%}\n"
         f"- Annualized trade cost: {execution_costs['ann_trade_cost']:.2%}\n"
         f"- Annualized total cost: {execution_costs['ann_total_cost']:.2%}\n\n"
+        "Contract cost diagnostics:\n\n"
+        f"{contract_cost_line}\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

@@ -4,6 +4,7 @@ import pandas as pd
 from futures_backtester.analytics import (
     concentration_summary,
     drawdown_summary,
+    execution_cost_by_contract,
     execution_cost_summary,
     performance_metrics,
     rolling_metrics,
@@ -163,6 +164,59 @@ def test_execution_cost_summary_separates_roll_and_trade_costs() -> None:
     assert summary.loc[0, "ann_roll_cost"] > 0.0
     assert summary.loc[0, "ann_trade_cost"] > summary.loc[0, "ann_commission_cost"]
     assert summary.loc[0, "ann_total_cost"] > summary.loc[0, "ann_trade_cost"]
+
+
+def test_execution_cost_by_contract_reconciles_to_portfolio_costs() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [0.0, 0.5, 0.25],
+            "TY": [0.0, -0.5, -0.25],
+        }
+    )
+    roll_cost_bps = pd.DataFrame(
+        {
+            "ES": [1.0, 1.0, 1.0],
+            "TY": [2.0, 2.0, 2.0],
+        }
+    )
+    commission_bps = pd.Series({"ES": 0.5, "TY": 0.5})
+
+    portfolio = execution_cost_summary(weights, roll_cost_bps, commission_bps, slippage_bps=1.0)
+    by_contract = execution_cost_by_contract(
+        weights,
+        roll_cost_bps,
+        commission_bps,
+        slippage_bps=1.0,
+    )
+
+    assert list(by_contract.columns) == [
+        "avg_abs_weight",
+        "avg_daily_turnover",
+        "annualized_turnover",
+        "ann_roll_cost",
+        "ann_commission_cost",
+        "ann_slippage_cost",
+        "ann_trade_cost",
+        "ann_total_cost",
+        "max_daily_cost",
+    ]
+    assert list(by_contract.index) == ["TY", "ES"]
+    assert by_contract.loc["TY", "ann_total_cost"] > by_contract.loc["ES", "ann_total_cost"]
+    assert np.isclose(
+        by_contract["annualized_turnover"].sum(),
+        portfolio.loc[0, "annualized_turnover"],
+    )
+    assert np.isclose(by_contract["ann_roll_cost"].sum(), portfolio.loc[0, "ann_roll_cost"])
+    assert np.isclose(
+        by_contract["ann_commission_cost"].sum(),
+        portfolio.loc[0, "ann_commission_cost"],
+    )
+    assert np.isclose(
+        by_contract["ann_slippage_cost"].sum(),
+        portfolio.loc[0, "ann_slippage_cost"],
+    )
+    assert np.isclose(by_contract["ann_trade_cost"].sum(), portfolio.loc[0, "ann_trade_cost"])
+    assert np.isclose(by_contract["ann_total_cost"].sum(), portfolio.loc[0, "ann_total_cost"])
 
 
 def test_walk_forward_summary_reports_selection_stability() -> None:

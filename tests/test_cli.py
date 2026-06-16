@@ -32,6 +32,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
+    assert (out_dir / "execution_costs_by_contract.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
     assert (out_dir / "output_manifest.csv").exists()
     assert (out_dir / "research_report.md").exists()
@@ -49,6 +50,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
+        "execution_costs_by_contract.csv",
         "equity_curve.png",
         "research_report.md",
     } <= set(manifest["artifact"])
@@ -73,3 +75,5 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
     assert "Drawdown diagnostics" in report
+    assert "Contract cost diagnostics" in report
+    assert "Highest annualized contract cost" in report

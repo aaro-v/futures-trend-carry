@@ -8,6 +8,7 @@ from futures_backtester.backtesting.analytics import (
     bootstrap_bands,
     concentration_summary,
     drawdown_summary,
+    execution_cost_by_contract,
     execution_cost_summary,
     performance_metrics,
     regime_metrics,
@@ -49,6 +50,7 @@ class BacktestResult:
     concentration: pd.DataFrame
     drawdowns: pd.DataFrame
     execution_costs: pd.DataFrame
+    execution_costs_by_contract: pd.DataFrame
     walk_forward_summary: pd.DataFrame
     bootstrap_bands: pd.DataFrame
 
@@ -140,6 +142,12 @@ def run_backtest(
         concentration=concentration_summary(stitched_weights.loc[live.index]),
         drawdowns=drawdown_summary(live),
         execution_costs=execution_cost_summary(
+            stitched_weights.loc[live.index],
+            panel.roll_cost_bps,
+            panel.commission_bps,
+            settings.slippage_bps,
+        ),
+        execution_costs_by_contract=execution_cost_by_contract(
             stitched_weights.loc[live.index],
             panel.roll_cost_bps,
             panel.commission_bps,
