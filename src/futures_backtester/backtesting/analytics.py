@@ -348,17 +348,18 @@ def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def bootstrap_bands(
+def _bootstrap_metric_samples(
     returns: pd.Series,
-    samples: int = 500,
-    block: int = 21,
-    seed: int = 11,
+    samples: int,
+    block: int,
+    seed: int,
 ) -> pd.DataFrame:
     clean = returns.dropna().to_numpy()
+    if len(clean) < block or samples <= 0 or block <= 0:
+        return pd.DataFrame()
+
     rng = np.random.default_rng(seed)
     rows = []
-    if len(clean) < block:
-        return pd.DataFrame()
     for _ in range(samples):
         chunks = []
         while sum(len(chunk) for chunk in chunks) < len(clean):
@@ -366,5 +367,62 @@ def bootstrap_bands(
             chunks.append(clean[start : start + block])
         sample = pd.Series(np.concatenate(chunks)[: len(clean)])
         rows.append(performance_metrics(sample))
-    metrics = pd.DataFrame(rows)
+    return pd.DataFrame(rows)
+
+
+def bootstrap_bands(
+    returns: pd.Series,
+    samples: int = 500,
+    block: int = 21,
+    seed: int = 11,
+) -> pd.DataFrame:
+    metrics = _bootstrap_metric_samples(returns, samples=samples, block=block, seed=seed)
+    if metrics.empty:
+        return pd.DataFrame()
     return metrics.quantile([0.05, 0.5, 0.95]).rename(index={0.05: "p05", 0.5: "p50", 0.95: "p95"})
+
+
+def bootstrap_reliability_summary(
+    returns: pd.Series,
+    samples: int = 500,
+    block: int = 21,
+    seed: int = 11,
+    drawdown_limit: float = -0.10,
+) -> pd.DataFrame:
+    columns = [
+        "samples",
+        "block_days",
+        "observations",
+        "prob_positive_ann_return",
+        "prob_positive_sharpe",
+        "prob_positive_sortino",
+        "prob_drawdown_below_limit",
+        "drawdown_limit",
+        "median_sharpe",
+        "median_max_drawdown",
+        "median_cvar_5",
+    ]
+    metrics = _bootstrap_metric_samples(returns, samples=samples, block=block, seed=seed)
+    if metrics.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    return pd.DataFrame(
+        [
+            {
+                "samples": float(len(metrics)),
+                "block_days": float(block),
+                "observations": float(len(returns.dropna())),
+                "prob_positive_ann_return": float((metrics["ann_return"] > 0.0).mean()),
+                "prob_positive_sharpe": float((metrics["sharpe"] > 0.0).mean()),
+                "prob_positive_sortino": float((metrics["sortino"] > 0.0).mean()),
+                "prob_drawdown_below_limit": float(
+                    (metrics["max_drawdown"] <= drawdown_limit).mean()
+                ),
+                "drawdown_limit": float(drawdown_limit),
+                "median_sharpe": float(metrics["sharpe"].median()),
+                "median_max_drawdown": float(metrics["max_drawdown"].median()),
+                "median_cvar_5": float(metrics["cvar_5"].median()),
+            }
+        ],
+        columns=columns,
+    )

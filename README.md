@@ -47,6 +47,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/execution_costs.csv`
 - `reports/generated/walk_forward_summary.csv`
 - `reports/generated/bootstrap_bands.csv`
+- `reports/generated/bootstrap_reliability.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
 - `reports/generated/output_manifest.csv`
@@ -87,6 +88,9 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   selected-window drawdown severity.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
+- Bootstrap reliability diagnostics covering positive-return probability,
+  positive-Sharpe probability, drawdown breach probability, and median
+  resampled tail risk.
 - Rolling out-of-sample risk diagnostics for time-varying annualized return,
   volatility, Sharpe, and drawdown review.
 - Sector exposure summaries to make concentration and diversification review

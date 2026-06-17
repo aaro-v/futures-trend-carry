@@ -1,5 +1,6 @@
 from futures_backtester.backtesting.analytics import (
     bootstrap_bands,
+    bootstrap_reliability_summary,
     concentration_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -13,6 +14,7 @@ from futures_backtester.backtesting.analytics import (
 
 __all__ = [
     "bootstrap_bands",
+    "bootstrap_reliability_summary",
     "concentration_summary",
     "drawdown_summary",
     "execution_cost_by_contract",

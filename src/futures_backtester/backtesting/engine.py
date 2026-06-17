@@ -6,6 +6,7 @@ import pandas as pd
 
 from futures_backtester.backtesting.analytics import (
     bootstrap_bands,
+    bootstrap_reliability_summary,
     concentration_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -53,6 +54,7 @@ class BacktestResult:
     execution_costs_by_contract: pd.DataFrame
     walk_forward_summary: pd.DataFrame
     bootstrap_bands: pd.DataFrame
+    bootstrap_reliability: pd.DataFrame
 
 
 def _candidate_returns(
@@ -155,4 +157,8 @@ def run_backtest(
         ),
         walk_forward_summary=walk_forward_summary(pd.DataFrame(selections)),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
+        bootstrap_reliability=bootstrap_reliability_summary(
+            live,
+            samples=settings.bootstrap_samples,
+        ),
     )

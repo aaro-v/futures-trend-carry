@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from futures_backtester.analytics import (
+    bootstrap_reliability_summary,
     concentration_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -217,6 +218,50 @@ def test_execution_cost_by_contract_reconciles_to_portfolio_costs() -> None:
     )
     assert np.isclose(by_contract["ann_trade_cost"].sum(), portfolio.loc[0, "ann_trade_cost"])
     assert np.isclose(by_contract["ann_total_cost"].sum(), portfolio.loc[0, "ann_total_cost"])
+
+
+def test_bootstrap_reliability_summary_reports_resample_probabilities() -> None:
+    returns = pd.Series(
+        [0.01, -0.005, 0.004, 0.002, -0.003, 0.006, -0.002, 0.005],
+        index=pd.date_range("2024-01-01", periods=8),
+    )
+
+    summary = bootstrap_reliability_summary(
+        returns,
+        samples=20,
+        block=3,
+        seed=3,
+        drawdown_limit=-0.02,
+    )
+
+    expected_columns = [
+        "samples",
+        "block_days",
+        "observations",
+        "prob_positive_ann_return",
+        "prob_positive_sharpe",
+        "prob_positive_sortino",
+        "prob_drawdown_below_limit",
+        "drawdown_limit",
+        "median_sharpe",
+        "median_max_drawdown",
+        "median_cvar_5",
+    ]
+    assert list(summary.columns) == expected_columns
+    assert summary.loc[0, "samples"] == 20.0
+    assert summary.loc[0, "block_days"] == 3.0
+    assert summary.loc[0, "observations"] == 8.0
+    assert summary.loc[0, "drawdown_limit"] == -0.02
+    for column in [
+        "prob_positive_ann_return",
+        "prob_positive_sharpe",
+        "prob_positive_sortino",
+        "prob_drawdown_below_limit",
+    ]:
+        assert 0.0 <= summary.loc[0, column] <= 1.0
+    assert np.isfinite(summary[["median_sharpe", "median_max_drawdown", "median_cvar_5"]]).all(
+        axis=None
+    )
 
 
 def test_walk_forward_summary_reports_selection_stability() -> None:

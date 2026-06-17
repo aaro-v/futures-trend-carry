@@ -85,6 +85,7 @@ def run(
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
+    result.bootstrap_reliability.to_csv(output_dir / "bootstrap_reliability.csv", index=False)
     artifact_names = [
         "summary.csv",
         "rolling_metrics.csv",
@@ -99,6 +100,7 @@ def run(
         "execution_costs_by_contract.csv",
         "walk_forward_summary.csv",
         "bootstrap_bands.csv",
+        "bootstrap_reliability.csv",
     ]
 
     equity = (1.0 + result.returns).cumprod()
@@ -123,6 +125,7 @@ def run(
         else None
     )
     walk_forward = result.walk_forward_summary.iloc[0]
+    bootstrap_reliability = result.bootstrap_reliability.iloc[0]
     rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
     drawdown_line = (
         f"- Worst drawdown episode: {worst_drawdown['depth']:.2%} "
@@ -173,6 +176,16 @@ def run(
         f"- Train-to-test Sharpe degradation: {walk_forward['sharpe_degradation']:.2f}\n"
         f"- Positive test Sharpe windows: {walk_forward['positive_test_sharpe_rate']:.0%}\n"
         f"- Worst selected-window test drawdown: {walk_forward['worst_test_max_drawdown']:.2%}\n\n"
+        "Bootstrap reliability:\n\n"
+        f"- Resamples: {bootstrap_reliability['samples']:.0f} "
+        f"with {bootstrap_reliability['block_days']:.0f}-day blocks\n"
+        f"- Positive annualized return probability: "
+        f"{bootstrap_reliability['prob_positive_ann_return']:.0%}\n"
+        f"- Positive Sharpe probability: {bootstrap_reliability['prob_positive_sharpe']:.0%}\n"
+        f"- Drawdown worse than {bootstrap_reliability['drawdown_limit']:.0%} probability: "
+        f"{bootstrap_reliability['prob_drawdown_below_limit']:.0%}\n"
+        f"- Median resampled Sharpe: {bootstrap_reliability['median_sharpe']:.2f}\n"
+        f"- Median resampled CVaR 5%: {bootstrap_reliability['median_cvar_5']:.2%}\n\n"
         "Drawdown diagnostics:\n\n"
         f"{drawdown_line}\n"
         "Execution diagnostics:\n\n"

@@ -34,6 +34,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
+    assert (out_dir / "bootstrap_reliability.csv").exists()
     assert (out_dir / "output_manifest.csv").exists()
     assert (out_dir / "research_report.md").exists()
     manifest = pd.read_csv(out_dir / "output_manifest.csv")
@@ -52,6 +53,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "walk_forward_selections.csv",
         "execution_costs_by_contract.csv",
         "equity_curve.png",
+        "bootstrap_reliability.csv",
         "research_report.md",
     } <= set(manifest["artifact"])
     assert manifest["artifact"].is_unique
@@ -75,5 +77,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
     assert "Drawdown diagnostics" in report
+    assert "Bootstrap reliability" in report
+    assert "Positive Sharpe probability" in report
     assert "Contract cost diagnostics" in report
     assert "Highest annualized contract cost" in report

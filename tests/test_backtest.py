@@ -107,6 +107,19 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "worst_test_max_drawdown",
     } <= set(result.walk_forward_summary.columns)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
+    assert {
+        "samples",
+        "block_days",
+        "observations",
+        "prob_positive_ann_return",
+        "prob_positive_sharpe",
+        "prob_positive_sortino",
+        "prob_drawdown_below_limit",
+        "drawdown_limit",
+        "median_sharpe",
+        "median_max_drawdown",
+        "median_cvar_5",
+    } <= set(result.bootstrap_reliability.columns)
     assert np.isfinite(result.summary.to_numpy()).all()
     assert np.isfinite(result.rolling_metrics.to_numpy()).all()
     assert np.isfinite(
@@ -119,3 +132,4 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
+    assert np.isfinite(result.bootstrap_reliability.to_numpy()).all()
