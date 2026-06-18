@@ -83,6 +83,9 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Vectorized weight construction with volatility targeting, inverse-volatility
   risk parity, turnover-aware execution costs, roll costs, and slippage.
 - Walk-forward parameter selection over trend/carry blends and lookbacks.
+- Portfolio returns recomputed from the stitched walk-forward weight path so
+  parameter switches use actual prior holdings and incur consistent transition
+  costs.
 - Walk-forward stability diagnostics covering selected parameter diversity,
   parameter switching, train/test Sharpe decay, positive test-window rate, and
   selected-window drawdown severity.

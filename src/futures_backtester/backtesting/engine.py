@@ -95,7 +95,6 @@ def run_backtest(
                 settings,
             )
 
-    stitched_returns = pd.Series(0.0, index=dates, name="net_return")
     stitched_weights = pd.DataFrame(0.0, index=dates, columns=panel.prices.columns)
     selections = []
     start = settings.train_days
@@ -109,9 +108,7 @@ def run_backtest(
             for params, result in candidates.items()
         }
         best = max(scores, key=scores.get)
-        best_returns, best_weights = candidates[best]
-        test_metrics = performance_metrics(best_returns.iloc[test_slice])
-        stitched_returns.iloc[test_slice] = best_returns.iloc[test_slice]
+        _, best_weights = candidates[best]
         stitched_weights.iloc[test_slice, :] = best_weights.iloc[test_slice, :]
         selections.append(
             {
@@ -120,12 +117,28 @@ def run_backtest(
                 "trend_lookback": best[0],
                 "carry_weight": best[1],
                 "train_sharpe": scores[best],
+            }
+        )
+        start = test_end
+
+    stitched_returns = net_strategy_returns(
+        stitched_weights,
+        daily_returns(panel.prices),
+        panel.roll_cost_bps,
+        panel.commission_bps,
+        slippage_bps=settings.slippage_bps,
+    )
+    for selection in selections:
+        test_metrics = performance_metrics(
+            stitched_returns.loc[selection["start"] : selection["end"]]
+        )
+        selection.update(
+            {
                 "test_ann_return": test_metrics["ann_return"],
                 "test_sharpe": test_metrics["sharpe"],
                 "test_max_drawdown": test_metrics["max_drawdown"],
             }
         )
-        start = test_end
 
     live = stitched_returns.iloc[settings.train_days :].rename("net_return")
     summary = pd.DataFrame([performance_metrics(live)])

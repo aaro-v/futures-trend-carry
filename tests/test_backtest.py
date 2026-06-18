@@ -1,7 +1,10 @@
 import numpy as np
+import pandas as pd
 
 from futures_backtester.backtest import BacktestSettings, run_backtest
 from futures_backtester.data import make_sample_panel
+from futures_backtester.portfolio import net_strategy_returns
+from futures_backtester.signals import daily_returns
 
 
 def test_run_backtest_outputs_reviewer_artifacts() -> None:
@@ -133,3 +136,42 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
     assert np.isfinite(result.bootstrap_reliability.to_numpy()).all()
+
+
+def test_walk_forward_returns_reconcile_to_stitched_portfolio_weights() -> None:
+    panel = make_sample_panel(days=780, contracts=8, seed=9)
+    settings = BacktestSettings(
+        trend_lookbacks=(63, 126),
+        carry_weights=(0.0, 0.5),
+        train_days=252,
+        test_days=63,
+        bootstrap_samples=20,
+    )
+
+    result = run_backtest(panel, settings)
+
+    parameter_switches = (
+        result.selections[["trend_lookback", "carry_weight"]]
+        .diff()
+        .ne(0.0)
+        .any(axis=1)
+        .iloc[1:]
+    )
+    assert parameter_switches.any()
+
+    prior_date = panel.prices.index[settings.train_days - 1]
+    weights = pd.concat(
+        [
+            pd.DataFrame(0.0, index=[prior_date], columns=result.weights.columns),
+            result.weights,
+        ]
+    )
+    expected = net_strategy_returns(
+        weights,
+        daily_returns(panel.prices).loc[weights.index],
+        panel.roll_cost_bps.loc[weights.index],
+        panel.commission_bps,
+        slippage_bps=settings.slippage_bps,
+    ).iloc[1:]
+
+    assert np.allclose(result.returns, expected)
