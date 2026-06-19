@@ -7,6 +7,7 @@ from futures_backtester.analytics import (
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
+    parameter_grid_summary,
     performance_metrics,
     rolling_metrics,
     walk_forward_summary,
@@ -291,3 +292,44 @@ def test_walk_forward_summary_reports_selection_stability() -> None:
     )
     assert summary.loc[0, "positive_test_sharpe_rate"] == 2 / 3
     assert summary.loc[0, "worst_test_max_drawdown"] == -0.08
+
+
+def test_parameter_grid_summary_ranks_candidates_by_test_sharpe() -> None:
+    grid = pd.DataFrame(
+        {
+            "start": pd.to_datetime(["2024-01-01"] * 4),
+            "end": pd.to_datetime(["2024-03-31"] * 4),
+            "trend_lookback": [63, 63, 126, 126],
+            "carry_weight": [0.0, 0.0, 0.5, 0.5],
+            "is_selected": [True, True, False, False],
+            "train_sharpe": [0.8, 0.6, 1.1, 1.0],
+            "test_ann_return": [0.05, 0.04, 0.02, -0.01],
+            "test_sharpe": [0.7, 0.5, 0.2, -0.1],
+            "test_max_drawdown": [-0.04, -0.03, -0.08, -0.12],
+        }
+    )
+
+    summary = parameter_grid_summary(grid)
+
+    assert list(summary.columns) == [
+        "trend_lookback",
+        "carry_weight",
+        "windows",
+        "selection_count",
+        "selection_rate",
+        "avg_train_sharpe",
+        "avg_test_ann_return",
+        "avg_test_sharpe",
+        "sharpe_degradation",
+        "positive_test_sharpe_rate",
+        "avg_test_max_drawdown",
+        "worst_test_max_drawdown",
+    ]
+    assert summary.loc[0, "trend_lookback"] == 63
+    assert summary.loc[0, "carry_weight"] == 0.0
+    assert summary.loc[0, "windows"] == 2
+    assert summary.loc[0, "selection_count"] == 2
+    assert summary.loc[0, "selection_rate"] == 1.0
+    assert summary.loc[0, "avg_test_sharpe"] == 0.6
+    assert np.isclose(summary.loc[0, "sharpe_degradation"], 0.1)
+    assert summary.loc[1, "worst_test_max_drawdown"] == -0.12

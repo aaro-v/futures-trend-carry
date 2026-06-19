@@ -28,6 +28,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "rolling_metrics.csv").exists()
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
+    assert (out_dir / "parameter_grid.csv").exists()
+    assert (out_dir / "parameter_grid_summary.csv").exists()
     assert (out_dir / "sector_exposure.csv").exists()
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
@@ -51,6 +53,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
+        "parameter_grid.csv",
+        "parameter_grid_summary.csv",
         "execution_costs_by_contract.csv",
         "equity_curve.png",
         "bootstrap_reliability.csv",
@@ -69,6 +73,15 @@ def test_cli_generates_outputs(tmp_path) -> None:
     selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
     assert "test_sharpe" in selections
     assert "test_max_drawdown" in selections
+    parameter_grid = pd.read_csv(out_dir / "parameter_grid.csv")
+    parameter_grid_summary = pd.read_csv(out_dir / "parameter_grid_summary.csv")
+    assert "is_selected" in parameter_grid
+    assert parameter_grid["is_selected"].sum() >= 1
+    assert {
+        "selection_rate",
+        "avg_test_sharpe",
+        "positive_test_sharpe_rate",
+    } <= set(parameter_grid_summary.columns)
     report = (out_dir / "research_report.md").read_text(encoding="utf-8")
     assert "Sortino" in report
     assert "Calmar" in report
@@ -76,6 +89,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
+    assert "Parameter grid diagnostics" in report
+    assert "Best average test Sharpe candidate" in report
     assert "Drawdown diagnostics" in report
     assert "Bootstrap reliability" in report
     assert "Positive Sharpe probability" in report

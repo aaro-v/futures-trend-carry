@@ -40,6 +40,8 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/rolling_metrics.csv`
 - `reports/generated/daily_returns.csv`
 - `reports/generated/weights.csv`
+- `reports/generated/parameter_grid.csv`
+- `reports/generated/parameter_grid_summary.csv`
 - `reports/generated/regime_metrics.csv`
 - `reports/generated/sector_exposure.csv`
 - `reports/generated/concentration.csv`
@@ -89,6 +91,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Walk-forward stability diagnostics covering selected parameter diversity,
   parameter switching, train/test Sharpe decay, positive test-window rate, and
   selected-window drawdown severity.
+- Full walk-forward parameter-grid diagnostics showing train and test outcomes
+  for selected and unselected candidates.
 - Regime-conditioned performance analytics and bootstrap confidence bands for
   Sharpe, Sortino, Calmar, maximum drawdown, CVaR, and annualized return.
 - Bootstrap reliability diagnostics covering positive-return probability,

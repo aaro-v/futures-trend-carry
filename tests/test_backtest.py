@@ -21,6 +21,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert not result.returns.empty
     assert result.weights.shape[0] == len(result.returns)
     assert not result.selections.empty
+    assert not result.parameter_grid.empty
     assert {
         "start",
         "end",
@@ -31,6 +32,17 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "test_sharpe",
         "test_max_drawdown",
     } <= set(result.selections.columns)
+    assert {
+        "start",
+        "end",
+        "trend_lookback",
+        "carry_weight",
+        "is_selected",
+        "train_sharpe",
+        "test_ann_return",
+        "test_sharpe",
+        "test_max_drawdown",
+    } <= set(result.parameter_grid.columns)
     expected_columns = {
         "ann_return",
         "ann_vol",
@@ -109,6 +121,22 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "avg_test_max_drawdown",
         "worst_test_max_drawdown",
     } <= set(result.walk_forward_summary.columns)
+    assert {
+        "trend_lookback",
+        "carry_weight",
+        "windows",
+        "selection_count",
+        "selection_rate",
+        "avg_train_sharpe",
+        "avg_test_ann_return",
+        "avg_test_sharpe",
+        "sharpe_degradation",
+        "positive_test_sharpe_rate",
+        "avg_test_max_drawdown",
+        "worst_test_max_drawdown",
+    } <= set(result.parameter_grid_summary.columns)
+    assert result.parameter_grid["is_selected"].sum() == len(result.selections)
+    assert result.parameter_grid_summary["selection_count"].sum() == len(result.selections)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
     assert {
         "samples",
@@ -135,6 +163,14 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
+    assert np.isfinite(
+        result.parameter_grid[
+            ["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]
+        ]
+        .to_numpy()
+        .astype(float)
+    ).all()
+    assert np.isfinite(result.parameter_grid_summary.to_numpy()).all()
     assert np.isfinite(result.bootstrap_reliability.to_numpy()).all()
 
 

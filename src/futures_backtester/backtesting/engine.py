@@ -11,6 +11,7 @@ from futures_backtester.backtesting.analytics import (
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
+    parameter_grid_summary,
     performance_metrics,
     regime_metrics,
     rolling_metrics,
@@ -44,6 +45,7 @@ class BacktestResult:
     returns: pd.Series
     weights: pd.DataFrame
     selections: pd.DataFrame
+    parameter_grid: pd.DataFrame
     summary: pd.DataFrame
     rolling_metrics: pd.DataFrame
     regime_metrics: pd.DataFrame
@@ -53,6 +55,7 @@ class BacktestResult:
     execution_costs: pd.DataFrame
     execution_costs_by_contract: pd.DataFrame
     walk_forward_summary: pd.DataFrame
+    parameter_grid_summary: pd.DataFrame
     bootstrap_bands: pd.DataFrame
     bootstrap_reliability: pd.DataFrame
 
@@ -97,6 +100,7 @@ def run_backtest(
 
     stitched_weights = pd.DataFrame(0.0, index=dates, columns=panel.prices.columns)
     selections = []
+    parameter_grid = []
     start = settings.train_days
     while start < len(dates):
         train_slice = slice(start - settings.train_days, start)
@@ -108,6 +112,21 @@ def run_backtest(
             for params, result in candidates.items()
         }
         best = max(scores, key=scores.get)
+        for params, result in candidates.items():
+            test_metrics = performance_metrics(result[0].iloc[test_slice])
+            parameter_grid.append(
+                {
+                    "start": dates[start],
+                    "end": dates[test_end - 1],
+                    "trend_lookback": params[0],
+                    "carry_weight": params[1],
+                    "is_selected": params == best,
+                    "train_sharpe": scores[params],
+                    "test_ann_return": test_metrics["ann_return"],
+                    "test_sharpe": test_metrics["sharpe"],
+                    "test_max_drawdown": test_metrics["max_drawdown"],
+                }
+            )
         _, best_weights = candidates[best]
         stitched_weights.iloc[test_slice, :] = best_weights.iloc[test_slice, :]
         selections.append(
@@ -142,10 +161,12 @@ def run_backtest(
 
     live = stitched_returns.iloc[settings.train_days :].rename("net_return")
     summary = pd.DataFrame([performance_metrics(live)])
+    parameter_grid_frame = pd.DataFrame(parameter_grid)
     return BacktestResult(
         returns=live,
         weights=stitched_weights.loc[live.index],
         selections=pd.DataFrame(selections),
+        parameter_grid=parameter_grid_frame,
         summary=summary,
         rolling_metrics=rolling_metrics(
             live,
@@ -169,6 +190,7 @@ def run_backtest(
             settings.slippage_bps,
         ),
         walk_forward_summary=walk_forward_summary(pd.DataFrame(selections)),
+        parameter_grid_summary=parameter_grid_summary(parameter_grid_frame),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
         bootstrap_reliability=bootstrap_reliability_summary(
             live,

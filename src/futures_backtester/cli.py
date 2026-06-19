@@ -77,6 +77,8 @@ def run(
     result.returns.to_frame().to_csv(output_dir / "daily_returns.csv")
     result.weights.to_csv(output_dir / "weights.csv")
     result.selections.to_csv(output_dir / "walk_forward_selections.csv", index=False)
+    result.parameter_grid.to_csv(output_dir / "parameter_grid.csv", index=False)
+    result.parameter_grid_summary.to_csv(output_dir / "parameter_grid_summary.csv", index=False)
     result.regime_metrics.to_csv(output_dir / "regime_metrics.csv")
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
@@ -92,6 +94,8 @@ def run(
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
+        "parameter_grid.csv",
+        "parameter_grid_summary.csv",
         "regime_metrics.csv",
         "sector_exposure.csv",
         "concentration.csv",
@@ -125,6 +129,7 @@ def run(
         else None
     )
     walk_forward = result.walk_forward_summary.iloc[0]
+    best_grid = result.parameter_grid_summary.iloc[0]
     bootstrap_reliability = result.bootstrap_reliability.iloc[0]
     rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
     drawdown_line = (
@@ -176,6 +181,15 @@ def run(
         f"- Train-to-test Sharpe degradation: {walk_forward['sharpe_degradation']:.2f}\n"
         f"- Positive test Sharpe windows: {walk_forward['positive_test_sharpe_rate']:.0%}\n"
         f"- Worst selected-window test drawdown: {walk_forward['worst_test_max_drawdown']:.2%}\n\n"
+        "Parameter grid diagnostics:\n\n"
+        f"- Candidate grid evaluations: {len(result.parameter_grid):.0f}\n"
+        f"- Best average test Sharpe candidate: {best_grid['trend_lookback']:.0f}-day trend, "
+        f"{best_grid['carry_weight']:.2f} carry weight "
+        f"({best_grid['avg_test_sharpe']:.2f} average test Sharpe)\n"
+        f"- Best candidate selection rate: {best_grid['selection_rate']:.0%}\n"
+        f"- Best candidate positive test Sharpe windows: "
+        f"{best_grid['positive_test_sharpe_rate']:.0%}\n"
+        f"- Best candidate worst test drawdown: {best_grid['worst_test_max_drawdown']:.2%}\n\n"
         "Bootstrap reliability:\n\n"
         f"- Resamples: {bootstrap_reliability['samples']:.0f} "
         f"with {bootstrap_reliability['block_days']:.0f}-day blocks\n"

@@ -348,6 +348,48 @@ def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def parameter_grid_summary(grid: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "trend_lookback",
+        "carry_weight",
+        "windows",
+        "selection_count",
+        "selection_rate",
+        "avg_train_sharpe",
+        "avg_test_ann_return",
+        "avg_test_sharpe",
+        "sharpe_degradation",
+        "positive_test_sharpe_rate",
+        "avg_test_max_drawdown",
+        "worst_test_max_drawdown",
+    ]
+    if grid.empty:
+        return pd.DataFrame(columns=columns)
+
+    grouped = grid.groupby(["trend_lookback", "carry_weight"], sort=True)
+    summary = grouped.agg(
+        windows=("start", "count"),
+        selection_count=("is_selected", "sum"),
+        avg_train_sharpe=("train_sharpe", "mean"),
+        avg_test_ann_return=("test_ann_return", "mean"),
+        avg_test_sharpe=("test_sharpe", "mean"),
+        positive_test_sharpe_rate=("test_sharpe", lambda values: (values > 0.0).mean()),
+        avg_test_max_drawdown=("test_max_drawdown", "mean"),
+        worst_test_max_drawdown=("test_max_drawdown", "min"),
+    ).reset_index()
+    summary["selection_rate"] = summary["selection_count"] / summary["windows"]
+    summary["sharpe_degradation"] = summary["avg_train_sharpe"] - summary["avg_test_sharpe"]
+
+    return (
+        summary[columns]
+        .sort_values(
+            ["avg_test_sharpe", "selection_rate", "trend_lookback", "carry_weight"],
+            ascending=[False, False, True, True],
+        )
+        .reset_index(drop=True)
+    )
+
+
 def _bootstrap_metric_samples(
     returns: pd.Series,
     samples: int,
