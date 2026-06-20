@@ -35,6 +35,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
+    assert (out_dir / "signal_contribution.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
     assert (out_dir / "bootstrap_reliability.csv").exists()
     assert (out_dir / "output_manifest.csv").exists()
@@ -56,6 +57,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "parameter_grid.csv",
         "parameter_grid_summary.csv",
         "execution_costs_by_contract.csv",
+        "signal_contribution.csv",
         "equity_curve.png",
         "bootstrap_reliability.csv",
         "research_report.md",
@@ -96,3 +98,5 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Positive Sharpe probability" in report
     assert "Contract cost diagnostics" in report
     assert "Highest annualized contract cost" in report
+    assert "Signal contribution diagnostics" in report
+    assert "Trend-attributed gross return" in report

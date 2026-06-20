@@ -85,6 +85,7 @@ def run(
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
+    result.signal_contribution.to_csv(output_dir / "signal_contribution.csv", index=False)
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
     result.bootstrap_reliability.to_csv(output_dir / "bootstrap_reliability.csv", index=False)
@@ -102,6 +103,7 @@ def run(
         "drawdowns.csv",
         "execution_costs.csv",
         "execution_costs_by_contract.csv",
+        "signal_contribution.csv",
         "walk_forward_summary.csv",
         "bootstrap_bands.csv",
         "bootstrap_reliability.csv",
@@ -128,6 +130,7 @@ def run(
         if not result.execution_costs_by_contract.empty
         else None
     )
+    signal_contribution = result.signal_contribution.iloc[0]
     walk_forward = result.walk_forward_summary.iloc[0]
     best_grid = result.parameter_grid_summary.iloc[0]
     bootstrap_reliability = result.bootstrap_reliability.iloc[0]
@@ -209,6 +212,19 @@ def run(
         f"- Annualized total cost: {execution_costs['ann_total_cost']:.2%}\n\n"
         "Contract cost diagnostics:\n\n"
         f"{contract_cost_line}\n"
+        "Signal contribution diagnostics:\n\n"
+        f"- Annualized gross return before costs: "
+        f"{signal_contribution['ann_gross_return']:.2%}\n"
+        f"- Trend-attributed gross return: "
+        f"{signal_contribution['ann_trend_attributed_return']:.2%}\n"
+        f"- Carry-attributed gross return: "
+        f"{signal_contribution['ann_carry_attributed_return']:.2%}\n"
+        f"- Average absolute trend component share: "
+        f"{signal_contribution['avg_abs_trend_component_share']:.0%}\n"
+        f"- Average absolute carry component share: "
+        f"{signal_contribution['avg_abs_carry_component_share']:.0%}\n"
+        f"- Trend/carry signal agreement rate: "
+        f"{signal_contribution['trend_carry_agreement_rate']:.0%}\n\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

@@ -16,6 +16,7 @@ from futures_backtester.backtesting.analytics import (
     regime_metrics,
     rolling_metrics,
     sector_exposure_summary,
+    signal_contribution_summary,
     walk_forward_summary,
 )
 from futures_backtester.data import FuturesPanel, make_sample_panel
@@ -24,7 +25,13 @@ from futures_backtester.portfolio.construction import (
     net_strategy_returns,
     risk_parity_weights,
 )
-from futures_backtester.signals.factors import blended_signal, daily_returns, realized_vol
+from futures_backtester.signals.factors import (
+    blended_signal,
+    carry_signal,
+    daily_returns,
+    realized_vol,
+    trend_signal,
+)
 
 
 @dataclass(frozen=True)
@@ -54,6 +61,7 @@ class BacktestResult:
     drawdowns: pd.DataFrame
     execution_costs: pd.DataFrame
     execution_costs_by_contract: pd.DataFrame
+    signal_contribution: pd.DataFrame
     walk_forward_summary: pd.DataFrame
     parameter_grid_summary: pd.DataFrame
     bootstrap_bands: pd.DataFrame
@@ -65,8 +73,10 @@ def _candidate_returns(
     lookback: int,
     carry_weight: float,
     settings: BacktestSettings,
-) -> tuple[pd.Series, pd.DataFrame]:
+) -> tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     returns = daily_returns(panel.prices)
+    trend = (1.0 - carry_weight) * trend_signal(panel.prices, lookback)
+    carry = carry_weight * carry_signal(panel.carry)
     signal = blended_signal(panel.prices, panel.carry, lookback, carry_weight)
     base = risk_parity_weights(signal, realized_vol(returns))
     weights = apply_vol_target(base, returns, target_vol=settings.target_vol)
@@ -77,7 +87,7 @@ def _candidate_returns(
         panel.commission_bps,
         slippage_bps=settings.slippage_bps,
     )
-    return net, weights
+    return net, weights, trend, carry
 
 
 def run_backtest(
@@ -88,7 +98,8 @@ def run_backtest(
     panel = panel or make_sample_panel()
     dates = panel.prices.index
 
-    candidates: dict[tuple[int, float], tuple[pd.Series, pd.DataFrame]] = {}
+    CandidateResult = tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.DataFrame]
+    candidates: dict[tuple[int, float], CandidateResult] = {}
     for lookback in settings.trend_lookbacks:
         for carry_weight in settings.carry_weights:
             candidates[(lookback, carry_weight)] = _candidate_returns(
@@ -99,6 +110,8 @@ def run_backtest(
             )
 
     stitched_weights = pd.DataFrame(0.0, index=dates, columns=panel.prices.columns)
+    stitched_trend_component = pd.DataFrame(0.0, index=dates, columns=panel.prices.columns)
+    stitched_carry_component = pd.DataFrame(0.0, index=dates, columns=panel.prices.columns)
     selections = []
     parameter_grid = []
     start = settings.train_days
@@ -127,8 +140,10 @@ def run_backtest(
                     "test_max_drawdown": test_metrics["max_drawdown"],
                 }
             )
-        _, best_weights = candidates[best]
+        _, best_weights, best_trend, best_carry = candidates[best]
         stitched_weights.iloc[test_slice, :] = best_weights.iloc[test_slice, :]
+        stitched_trend_component.iloc[test_slice, :] = best_trend.iloc[test_slice, :]
+        stitched_carry_component.iloc[test_slice, :] = best_carry.iloc[test_slice, :]
         selections.append(
             {
                 "start": dates[start],
@@ -188,6 +203,12 @@ def run_backtest(
             panel.roll_cost_bps,
             panel.commission_bps,
             settings.slippage_bps,
+        ),
+        signal_contribution=signal_contribution_summary(
+            stitched_weights.loc[live.index],
+            daily_returns(panel.prices).loc[live.index],
+            stitched_trend_component.loc[live.index],
+            stitched_carry_component.loc[live.index],
         ),
         walk_forward_summary=walk_forward_summary(pd.DataFrame(selections)),
         parameter_grid_summary=parameter_grid_summary(parameter_grid_frame),

@@ -107,6 +107,17 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     } <= set(result.execution_costs_by_contract.columns)
     assert result.execution_costs_by_contract.index.name == "contract"
     assert {
+        "ann_gross_return",
+        "ann_trend_attributed_return",
+        "ann_carry_attributed_return",
+        "ann_unassigned_return",
+        "avg_abs_trend_component_share",
+        "avg_abs_carry_component_share",
+        "trend_dominant_gross_share",
+        "carry_dominant_gross_share",
+        "trend_carry_agreement_rate",
+    } <= set(result.signal_contribution.columns)
+    assert {
         "windows",
         "unique_parameter_sets",
         "most_common_trend_lookback",
@@ -162,6 +173,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
+    assert np.isfinite(result.signal_contribution.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
     assert np.isfinite(
         result.parameter_grid[

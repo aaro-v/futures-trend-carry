@@ -10,6 +10,7 @@ from futures_backtester.analytics import (
     parameter_grid_summary,
     performance_metrics,
     rolling_metrics,
+    signal_contribution_summary,
     walk_forward_summary,
 )
 
@@ -219,6 +220,57 @@ def test_execution_cost_by_contract_reconciles_to_portfolio_costs() -> None:
     )
     assert np.isclose(by_contract["ann_trade_cost"].sum(), portfolio.loc[0, "ann_trade_cost"])
     assert np.isclose(by_contract["ann_total_cost"].sum(), portfolio.loc[0, "ann_total_cost"])
+
+
+def test_signal_contribution_summary_reconciles_gross_return_attribution() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [0.0, 0.6, 0.6],
+            "TY": [0.0, -0.4, -0.4],
+        }
+    )
+    returns = pd.DataFrame(
+        {
+            "ES": [0.0, 0.01, 0.02],
+            "TY": [0.0, -0.01, -0.02],
+        }
+    )
+    trend = pd.DataFrame(
+        {
+            "ES": [1.0, 2.0, 2.0],
+            "TY": [-1.0, -1.0, -1.0],
+        }
+    )
+    carry = pd.DataFrame(
+        {
+            "ES": [1.0, 1.0, 1.0],
+            "TY": [-1.0, -1.0, -1.0],
+        }
+    )
+
+    summary = signal_contribution_summary(weights, returns, trend, carry)
+
+    row = summary.iloc[0]
+    assert list(summary.columns) == [
+        "ann_gross_return",
+        "ann_trend_attributed_return",
+        "ann_carry_attributed_return",
+        "ann_unassigned_return",
+        "avg_abs_trend_component_share",
+        "avg_abs_carry_component_share",
+        "trend_dominant_gross_share",
+        "carry_dominant_gross_share",
+        "trend_carry_agreement_rate",
+    ]
+    assert np.isclose(
+        row["ann_gross_return"],
+        row["ann_trend_attributed_return"]
+        + row["ann_carry_attributed_return"]
+        + row["ann_unassigned_return"],
+    )
+    assert row["ann_trend_attributed_return"] > row["ann_carry_attributed_return"]
+    assert 0.0 < row["avg_abs_carry_component_share"] < row["avg_abs_trend_component_share"]
+    assert row["trend_carry_agreement_rate"] == 1.0
 
 
 def test_bootstrap_reliability_summary_reports_resample_probabilities() -> None:

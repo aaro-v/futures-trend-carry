@@ -285,6 +285,88 @@ def execution_cost_by_contract(
     return summary[columns].sort_values("ann_total_cost", ascending=False).rename_axis("contract")
 
 
+def signal_contribution_summary(
+    weights: pd.DataFrame,
+    returns: pd.DataFrame,
+    trend_component: pd.DataFrame,
+    carry_component: pd.DataFrame,
+) -> pd.DataFrame:
+    columns = [
+        "ann_gross_return",
+        "ann_trend_attributed_return",
+        "ann_carry_attributed_return",
+        "ann_unassigned_return",
+        "avg_abs_trend_component_share",
+        "avg_abs_carry_component_share",
+        "trend_dominant_gross_share",
+        "carry_dominant_gross_share",
+        "trend_carry_agreement_rate",
+    ]
+    if weights.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    aligned_returns = returns.reindex(index=weights.index, columns=weights.columns).fillna(0.0)
+    aligned_trend = trend_component.reindex(
+        index=weights.index,
+        columns=weights.columns,
+    ).fillna(0.0)
+    aligned_carry = carry_component.reindex(
+        index=weights.index,
+        columns=weights.columns,
+    ).fillna(0.0)
+
+    prior_weights = weights.shift(1).fillna(0.0)
+    gross_by_contract = prior_weights * aligned_returns
+    gross_return = gross_by_contract.sum(axis=1)
+
+    absolute_trend = aligned_trend.abs()
+    absolute_carry = aligned_carry.abs()
+    component_total = (absolute_trend + absolute_carry).replace(0.0, np.nan)
+    trend_share = absolute_trend.div(component_total).fillna(0.0)
+    carry_share = absolute_carry.div(component_total).fillna(0.0)
+
+    trend_return = (gross_by_contract * trend_share).sum(axis=1)
+    carry_return = (gross_by_contract * carry_share).sum(axis=1)
+    unassigned_return = gross_return - trend_return - carry_return
+
+    gross_weight = prior_weights.abs()
+    daily_gross_weight = gross_weight.sum(axis=1).replace(0.0, np.nan)
+    trend_dominant = absolute_trend >= absolute_carry
+    carry_dominant = absolute_carry > absolute_trend
+    agreeing = (np.sign(aligned_trend) == np.sign(aligned_carry)) & component_total.notna()
+
+    trend_component_share = (trend_share * gross_weight).sum(axis=1).div(daily_gross_weight)
+    carry_component_share = (carry_share * gross_weight).sum(axis=1).div(daily_gross_weight)
+    trend_dominant_share = gross_weight.where(trend_dominant, 0.0).sum(axis=1).div(
+        daily_gross_weight
+    )
+    carry_dominant_share = gross_weight.where(carry_dominant, 0.0).sum(axis=1).div(
+        daily_gross_weight
+    )
+    agreement_rate = gross_weight.where(agreeing, 0.0).sum(axis=1).div(daily_gross_weight)
+
+    def active_mean(values: pd.Series) -> float:
+        clean = values.dropna()
+        return float(clean.mean()) if not clean.empty else 0.0
+
+    return pd.DataFrame(
+        [
+            {
+                "ann_gross_return": float(gross_return.mean() * 252),
+                "ann_trend_attributed_return": float(trend_return.mean() * 252),
+                "ann_carry_attributed_return": float(carry_return.mean() * 252),
+                "ann_unassigned_return": float(unassigned_return.mean() * 252),
+                "avg_abs_trend_component_share": active_mean(trend_component_share),
+                "avg_abs_carry_component_share": active_mean(carry_component_share),
+                "trend_dominant_gross_share": active_mean(trend_dominant_share),
+                "carry_dominant_gross_share": active_mean(carry_dominant_share),
+                "trend_carry_agreement_rate": active_mean(agreement_rate),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def walk_forward_summary(selections: pd.DataFrame) -> pd.DataFrame:
     columns = [
         "windows",
