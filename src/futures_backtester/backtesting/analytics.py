@@ -40,6 +40,60 @@ def performance_metrics(returns: pd.Series) -> dict[str, float]:
     }
 
 
+def return_distribution_summary(returns: pd.Series) -> pd.DataFrame:
+    columns = [
+        "observations",
+        "hit_rate",
+        "avg_gain",
+        "avg_loss",
+        "gain_loss_ratio",
+        "best_day",
+        "worst_day",
+        "skew",
+        "excess_kurtosis",
+        "positive_month_rate",
+        "best_month",
+        "worst_month",
+    ]
+    clean = returns.dropna()
+    if clean.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    gains = clean[clean > 0.0]
+    losses = clean[clean < 0.0]
+    avg_gain = float(gains.mean()) if not gains.empty else 0.0
+    avg_loss = float(losses.mean()) if not losses.empty else 0.0
+    gain_loss_ratio = avg_gain / abs(avg_loss) if avg_loss < 0.0 else 0.0
+    skew = float(clean.skew()) if len(clean) >= 3 else 0.0
+    excess_kurtosis = float(clean.kurt()) if len(clean) >= 4 else 0.0
+
+    monthly_returns = pd.Series(dtype=float)
+    if isinstance(clean.index, pd.DatetimeIndex):
+        monthly_returns = clean.resample("ME").apply(lambda values: (1.0 + values).prod() - 1.0)
+
+    return pd.DataFrame(
+        [
+            {
+                "observations": float(len(clean)),
+                "hit_rate": float((clean > 0.0).mean()),
+                "avg_gain": avg_gain,
+                "avg_loss": avg_loss,
+                "gain_loss_ratio": float(gain_loss_ratio),
+                "best_day": float(clean.max()),
+                "worst_day": float(clean.min()),
+                "skew": skew,
+                "excess_kurtosis": excess_kurtosis,
+                "positive_month_rate": (
+                    float((monthly_returns > 0.0).mean()) if not monthly_returns.empty else 0.0
+                ),
+                "best_month": float(monthly_returns.max()) if not monthly_returns.empty else 0.0,
+                "worst_month": float(monthly_returns.min()) if not monthly_returns.empty else 0.0,
+            }
+        ],
+        columns=columns,
+    )
+
+
 def drawdown_summary(returns: pd.Series, top_n: int = 5) -> pd.DataFrame:
     columns = ["start", "trough", "recovery", "depth", "length_days", "recovery_days"]
     clean = returns.dropna()

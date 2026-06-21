@@ -25,6 +25,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
 
     assert result.exit_code == 0, result.output
     assert (out_dir / "summary.csv").exists()
+    assert (out_dir / "return_distribution.csv").exists()
     assert (out_dir / "rolling_metrics.csv").exists()
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
@@ -50,6 +51,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     } == set(manifest.columns)
     assert {
         "summary.csv",
+        "return_distribution.csv",
         "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
@@ -67,6 +69,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     summary_row = manifest.set_index("artifact").loc["summary.csv"]
     assert summary_row["rows"] == 1
     assert summary_row["columns"] >= 8
+    distribution_row = manifest.set_index("artifact").loc["return_distribution.csv"]
+    assert distribution_row["rows"] == 1
+    assert distribution_row["columns"] == 12
     rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
     assert rolling_row["rows"] >= 1
     assert rolling_row["columns"] == 7
@@ -87,6 +92,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     report = (out_dir / "research_report.md").read_text(encoding="utf-8")
     assert "Sortino" in report
     assert "Calmar" in report
+    assert "Daily hit rate" in report
+    assert "Positive months" in report
     assert "rolling Sharpe" in report
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report

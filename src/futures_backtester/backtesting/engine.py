@@ -14,6 +14,7 @@ from futures_backtester.backtesting.analytics import (
     parameter_grid_summary,
     performance_metrics,
     regime_metrics,
+    return_distribution_summary,
     rolling_metrics,
     sector_exposure_summary,
     signal_contribution_summary,
@@ -54,6 +55,7 @@ class BacktestResult:
     selections: pd.DataFrame
     parameter_grid: pd.DataFrame
     summary: pd.DataFrame
+    return_distribution: pd.DataFrame
     rolling_metrics: pd.DataFrame
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
@@ -183,6 +185,7 @@ def run_backtest(
         selections=pd.DataFrame(selections),
         parameter_grid=parameter_grid_frame,
         summary=summary,
+        return_distribution=return_distribution_summary(live),
         rolling_metrics=rolling_metrics(
             live,
             window=settings.rolling_window,

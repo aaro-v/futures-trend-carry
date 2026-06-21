@@ -73,6 +73,7 @@ def run(
     result = run_backtest(panel, settings)
 
     result.summary.to_csv(output_dir / "summary.csv", index=False)
+    result.return_distribution.to_csv(output_dir / "return_distribution.csv", index=False)
     result.rolling_metrics.to_csv(output_dir / "rolling_metrics.csv")
     result.returns.to_frame().to_csv(output_dir / "daily_returns.csv")
     result.weights.to_csv(output_dir / "weights.csv")
@@ -91,6 +92,7 @@ def run(
     result.bootstrap_reliability.to_csv(output_dir / "bootstrap_reliability.csv", index=False)
     artifact_names = [
         "summary.csv",
+        "return_distribution.csv",
         "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
@@ -121,6 +123,7 @@ def run(
     artifact_names.append("equity_curve.png")
 
     summary = result.summary.iloc[0]
+    distribution = result.return_distribution.iloc[0]
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
@@ -166,6 +169,12 @@ def run(
         f"- Maximum drawdown: {summary['max_drawdown']:.2%}\n"
         f"- Calmar: {summary['calmar']:.2f}\n"
         f"- CVaR 5%: {summary['cvar_5']:.2%}\n"
+        f"- Daily hit rate: {distribution['hit_rate']:.0%} "
+        f"with {distribution['gain_loss_ratio']:.2f}x average gain/loss ratio\n"
+        f"- Best/worst daily return: {distribution['best_day']:.2%} / "
+        f"{distribution['worst_day']:.2%}\n"
+        f"- Positive months: {distribution['positive_month_rate']:.0%} "
+        f"(best {distribution['best_month']:.2%}, worst {distribution['worst_month']:.2%})\n"
         f"{rolling_line}"
         f"- Largest average sector gross weight: {top_sector.name} "
         f"({top_sector['avg_gross_weight']:.2f})\n"

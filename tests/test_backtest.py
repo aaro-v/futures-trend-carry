@@ -55,6 +55,20 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     }
     assert expected_columns <= set(result.summary.columns)
     assert {
+        "observations",
+        "hit_rate",
+        "avg_gain",
+        "avg_loss",
+        "gain_loss_ratio",
+        "best_day",
+        "worst_day",
+        "skew",
+        "excess_kurtosis",
+        "positive_month_rate",
+        "best_month",
+        "worst_month",
+    } <= set(result.return_distribution.columns)
+    assert {
         "window_days",
         "observations",
         "ann_return",
@@ -163,6 +177,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "median_cvar_5",
     } <= set(result.bootstrap_reliability.columns)
     assert np.isfinite(result.summary.to_numpy()).all()
+    assert np.isfinite(result.return_distribution.to_numpy()).all()
     assert np.isfinite(result.rolling_metrics.to_numpy()).all()
     assert np.isfinite(
         result.selections[["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]]

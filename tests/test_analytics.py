@@ -9,6 +9,7 @@ from futures_backtester.analytics import (
     execution_cost_summary,
     parameter_grid_summary,
     performance_metrics,
+    return_distribution_summary,
     rolling_metrics,
     signal_contribution_summary,
     walk_forward_summary,
@@ -50,6 +51,49 @@ def test_performance_metrics_measure_constant_loss_downside_vol() -> None:
     assert metrics["ann_vol"] == 0.0
     assert metrics["downside_vol"] > 0.0
     assert metrics["sortino"] < 0.0
+
+
+def test_return_distribution_summary_reports_daily_and_monthly_shape() -> None:
+    returns = pd.Series(
+        [0.02, -0.01, 0.01, -0.03, 0.04],
+        index=pd.to_datetime(
+            ["2024-01-02", "2024-01-03", "2024-02-01", "2024-02-02", "2024-02-05"]
+        ),
+    )
+
+    summary = return_distribution_summary(returns)
+
+    assert list(summary.columns) == [
+        "observations",
+        "hit_rate",
+        "avg_gain",
+        "avg_loss",
+        "gain_loss_ratio",
+        "best_day",
+        "worst_day",
+        "skew",
+        "excess_kurtosis",
+        "positive_month_rate",
+        "best_month",
+        "worst_month",
+    ]
+    assert summary.loc[0, "observations"] == 5.0
+    assert summary.loc[0, "hit_rate"] == 0.6
+    assert np.isclose(summary.loc[0, "avg_gain"], (0.02 + 0.01 + 0.04) / 3)
+    assert np.isclose(summary.loc[0, "avg_loss"], (-0.01 - 0.03) / 2)
+    assert np.isclose(summary.loc[0, "gain_loss_ratio"], ((0.02 + 0.01 + 0.04) / 3) / 0.02)
+    assert summary.loc[0, "best_day"] == 0.04
+    assert summary.loc[0, "worst_day"] == -0.03
+    assert summary.loc[0, "positive_month_rate"] == 1.0
+    assert summary.loc[0, "best_month"] > summary.loc[0, "worst_month"]
+    assert np.isfinite(summary[["skew", "excess_kurtosis"]]).all(axis=None)
+
+
+def test_return_distribution_summary_handles_empty_returns() -> None:
+    summary = return_distribution_summary(pd.Series(dtype=float))
+
+    assert summary.shape == (1, 12)
+    assert (summary.iloc[0] == 0.0).all()
 
 
 def test_rolling_metrics_emit_time_varying_risk_diagnostics() -> None:
