@@ -88,6 +88,7 @@ def run(
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
     result.signal_contribution.to_csv(output_dir / "signal_contribution.csv", index=False)
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
+    result.selection_quality.to_csv(output_dir / "selection_quality.csv", index=False)
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
     result.bootstrap_reliability.to_csv(output_dir / "bootstrap_reliability.csv", index=False)
     artifact_names = [
@@ -107,6 +108,7 @@ def run(
         "execution_costs_by_contract.csv",
         "signal_contribution.csv",
         "walk_forward_summary.csv",
+        "selection_quality.csv",
         "bootstrap_bands.csv",
         "bootstrap_reliability.csv",
     ]
@@ -135,6 +137,7 @@ def run(
     )
     signal_contribution = result.signal_contribution.iloc[0]
     walk_forward = result.walk_forward_summary.iloc[0]
+    selection_quality = result.selection_quality.iloc[0]
     best_grid = result.parameter_grid_summary.iloc[0]
     bootstrap_reliability = result.bootstrap_reliability.iloc[0]
     rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
@@ -193,6 +196,19 @@ def run(
         f"- Train-to-test Sharpe degradation: {walk_forward['sharpe_degradation']:.2f}\n"
         f"- Positive test Sharpe windows: {walk_forward['positive_test_sharpe_rate']:.0%}\n"
         f"- Worst selected-window test drawdown: {walk_forward['worst_test_max_drawdown']:.2%}\n\n"
+        "Selection quality diagnostics:\n\n"
+        f"- Average selected candidate test Sharpe: "
+        f"{selection_quality['avg_selected_test_sharpe']:.2f}\n"
+        f"- Average best available candidate test Sharpe: "
+        f"{selection_quality['avg_best_available_test_sharpe']:.2f}\n"
+        f"- Average selected-candidate Sharpe regret: "
+        f"{selection_quality['avg_test_sharpe_regret']:.2f}\n"
+        f"- Worst selected-candidate Sharpe regret: "
+        f"{selection_quality['max_test_sharpe_regret']:.2f}\n"
+        f"- Windows where the selected candidate was best available: "
+        f"{selection_quality['zero_regret_window_rate']:.0%}\n"
+        f"- Average selected candidate out-of-sample rank: "
+        f"{selection_quality['avg_selected_rank']:.1f}\n\n"
         "Parameter grid diagnostics:\n\n"
         f"- Candidate grid evaluations: {len(result.parameter_grid):.0f}\n"
         f"- Best average test Sharpe candidate: {best_grid['trend_lookback']:.0f}-day trend, "

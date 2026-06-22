@@ -160,6 +160,16 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "avg_test_max_drawdown",
         "worst_test_max_drawdown",
     } <= set(result.parameter_grid_summary.columns)
+    assert {
+        "windows",
+        "avg_selected_test_sharpe",
+        "avg_best_available_test_sharpe",
+        "avg_test_sharpe_regret",
+        "max_test_sharpe_regret",
+        "zero_regret_window_rate",
+        "avg_selected_rank",
+        "worst_selected_rank",
+    } <= set(result.selection_quality.columns)
     assert result.parameter_grid["is_selected"].sum() == len(result.selections)
     assert result.parameter_grid_summary["selection_count"].sum() == len(result.selections)
     assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
@@ -190,6 +200,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.signal_contribution.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
+    assert np.isfinite(result.selection_quality.to_numpy()).all()
     assert np.isfinite(
         result.parameter_grid[
             ["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]

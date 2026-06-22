@@ -11,6 +11,7 @@ from futures_backtester.analytics import (
     performance_metrics,
     return_distribution_summary,
     rolling_metrics,
+    selection_quality_summary,
     signal_contribution_summary,
     walk_forward_summary,
 )
@@ -429,3 +430,59 @@ def test_parameter_grid_summary_ranks_candidates_by_test_sharpe() -> None:
     assert summary.loc[0, "avg_test_sharpe"] == 0.6
     assert np.isclose(summary.loc[0, "sharpe_degradation"], 0.1)
     assert summary.loc[1, "worst_test_max_drawdown"] == -0.12
+
+
+def test_selection_quality_summary_measures_out_of_sample_regret() -> None:
+    grid = pd.DataFrame(
+        {
+            "start": pd.to_datetime(["2024-01-01"] * 3 + ["2024-04-01"] * 3),
+            "end": pd.to_datetime(["2024-03-31"] * 3 + ["2024-06-30"] * 3),
+            "trend_lookback": [63, 126, 252, 63, 126, 252],
+            "carry_weight": [0.0, 0.5, 0.0, 0.0, 0.5, 0.0],
+            "is_selected": [True, False, False, False, True, False],
+            "train_sharpe": [1.0, 0.8, 0.2, 0.6, 1.1, 0.4],
+            "test_ann_return": [0.02, 0.10, -0.01, 0.03, 0.04, 0.00],
+            "test_sharpe": [0.2, 0.8, -0.1, 0.1, 0.4, -0.2],
+            "test_max_drawdown": [-0.04, -0.03, -0.08, -0.05, -0.02, -0.06],
+        }
+    )
+
+    summary = selection_quality_summary(grid)
+
+    assert list(summary.columns) == [
+        "windows",
+        "avg_selected_test_sharpe",
+        "avg_best_available_test_sharpe",
+        "avg_test_sharpe_regret",
+        "max_test_sharpe_regret",
+        "zero_regret_window_rate",
+        "avg_selected_rank",
+        "worst_selected_rank",
+    ]
+    assert summary.loc[0, "windows"] == 2.0
+    assert np.isclose(summary.loc[0, "avg_selected_test_sharpe"], 0.3)
+    assert np.isclose(summary.loc[0, "avg_best_available_test_sharpe"], 0.6)
+    assert np.isclose(summary.loc[0, "avg_test_sharpe_regret"], 0.3)
+    assert np.isclose(summary.loc[0, "max_test_sharpe_regret"], 0.6)
+    assert summary.loc[0, "zero_regret_window_rate"] == 0.5
+    assert summary.loc[0, "avg_selected_rank"] == 1.5
+    assert summary.loc[0, "worst_selected_rank"] == 2.0
+
+
+def test_selection_quality_summary_handles_empty_or_unselected_grid() -> None:
+    empty = selection_quality_summary(pd.DataFrame())
+    unselected = selection_quality_summary(
+        pd.DataFrame(
+            {
+                "start": pd.to_datetime(["2024-01-01"]),
+                "end": pd.to_datetime(["2024-03-31"]),
+                "is_selected": [False],
+                "test_sharpe": [0.5],
+            }
+        )
+    )
+
+    assert empty.shape == (1, 8)
+    assert unselected.shape == (1, 8)
+    assert (empty.iloc[0] == 0.0).all()
+    assert (unselected.iloc[0] == 0.0).all()

@@ -38,6 +38,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "execution_costs_by_contract.csv").exists()
     assert (out_dir / "signal_contribution.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
+    assert (out_dir / "selection_quality.csv").exists()
     assert (out_dir / "bootstrap_reliability.csv").exists()
     assert (out_dir / "output_manifest.csv").exists()
     assert (out_dir / "research_report.md").exists()
@@ -60,6 +61,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "parameter_grid_summary.csv",
         "execution_costs_by_contract.csv",
         "signal_contribution.csv",
+        "selection_quality.csv",
         "equity_curve.png",
         "bootstrap_reliability.csv",
         "research_report.md",
@@ -98,6 +100,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
+    assert "Selection quality diagnostics" in report
+    assert "Average selected-candidate Sharpe regret" in report
     assert "Parameter grid diagnostics" in report
     assert "Best average test Sharpe candidate" in report
     assert "Drawdown diagnostics" in report

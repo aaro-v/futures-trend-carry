@@ -50,6 +50,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/execution_costs_by_contract.csv`
 - `reports/generated/signal_contribution.csv`
 - `reports/generated/walk_forward_summary.csv`
+- `reports/generated/selection_quality.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/bootstrap_reliability.csv`
 - `reports/generated/equity_curve.png`
@@ -93,6 +94,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Walk-forward stability diagnostics covering selected parameter diversity,
   parameter switching, train/test Sharpe decay, positive test-window rate, and
   selected-window drawdown severity.
+- Selection quality diagnostics comparing train-selected candidates with the
+  best available out-of-sample candidate in each walk-forward window.
 - Full walk-forward parameter-grid diagnostics showing train and test outcomes
   for selected and unselected candidates.
 - Regime-conditioned performance analytics and bootstrap confidence bands for

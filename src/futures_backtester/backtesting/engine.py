@@ -17,6 +17,7 @@ from futures_backtester.backtesting.analytics import (
     return_distribution_summary,
     rolling_metrics,
     sector_exposure_summary,
+    selection_quality_summary,
     signal_contribution_summary,
     walk_forward_summary,
 )
@@ -66,6 +67,7 @@ class BacktestResult:
     signal_contribution: pd.DataFrame
     walk_forward_summary: pd.DataFrame
     parameter_grid_summary: pd.DataFrame
+    selection_quality: pd.DataFrame
     bootstrap_bands: pd.DataFrame
     bootstrap_reliability: pd.DataFrame
 
@@ -215,6 +217,7 @@ def run_backtest(
         ),
         walk_forward_summary=walk_forward_summary(pd.DataFrame(selections)),
         parameter_grid_summary=parameter_grid_summary(parameter_grid_frame),
+        selection_quality=selection_quality_summary(parameter_grid_frame),
         bootstrap_bands=bootstrap_bands(live, samples=settings.bootstrap_samples),
         bootstrap_reliability=bootstrap_reliability_summary(
             live,

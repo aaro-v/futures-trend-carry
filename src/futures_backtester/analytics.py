@@ -11,6 +11,7 @@ from futures_backtester.backtesting.analytics import (
     return_distribution_summary,
     rolling_metrics,
     sector_exposure_summary,
+    selection_quality_summary,
     signal_contribution_summary,
     walk_forward_summary,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "return_distribution_summary",
     "rolling_metrics",
     "sector_exposure_summary",
+    "selection_quality_summary",
     "signal_contribution_summary",
     "walk_forward_summary",
 ]

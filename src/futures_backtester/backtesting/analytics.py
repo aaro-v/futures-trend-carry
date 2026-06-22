@@ -526,6 +526,62 @@ def parameter_grid_summary(grid: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def selection_quality_summary(grid: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "windows",
+        "avg_selected_test_sharpe",
+        "avg_best_available_test_sharpe",
+        "avg_test_sharpe_regret",
+        "max_test_sharpe_regret",
+        "zero_regret_window_rate",
+        "avg_selected_rank",
+        "worst_selected_rank",
+    ]
+    if grid.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    rows = []
+    for _, window in grid.groupby(["start", "end"], sort=True):
+        selected = window.loc[window["is_selected"]]
+        if selected.empty:
+            continue
+        selected_row = selected.iloc[0]
+        best_sharpe = float(window["test_sharpe"].max())
+        ranks = window["test_sharpe"].rank(method="min", ascending=False)
+        selected_rank = float(ranks.loc[selected_row.name])
+        selected_sharpe = float(selected_row["test_sharpe"])
+        rows.append(
+            {
+                "selected_test_sharpe": selected_sharpe,
+                "best_available_test_sharpe": best_sharpe,
+                "test_sharpe_regret": best_sharpe - selected_sharpe,
+                "selected_rank": selected_rank,
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    quality = pd.DataFrame(rows)
+    return pd.DataFrame(
+        [
+            {
+                "windows": float(len(quality)),
+                "avg_selected_test_sharpe": float(quality["selected_test_sharpe"].mean()),
+                "avg_best_available_test_sharpe": float(
+                    quality["best_available_test_sharpe"].mean()
+                ),
+                "avg_test_sharpe_regret": float(quality["test_sharpe_regret"].mean()),
+                "max_test_sharpe_regret": float(quality["test_sharpe_regret"].max()),
+                "zero_regret_window_rate": float((quality["test_sharpe_regret"] == 0.0).mean()),
+                "avg_selected_rank": float(quality["selected_rank"].mean()),
+                "worst_selected_rank": float(quality["selected_rank"].max()),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def _bootstrap_metric_samples(
     returns: pd.Series,
     samples: int,
