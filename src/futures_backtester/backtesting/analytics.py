@@ -339,6 +339,61 @@ def execution_cost_by_contract(
     return summary[columns].sort_values("ann_total_cost", ascending=False).rename_axis("contract")
 
 
+def rebalance_summary(weights: pd.DataFrame, threshold: float = 1e-12) -> pd.DataFrame:
+    columns = [
+        "observations",
+        "rebalance_days",
+        "rebalance_day_rate",
+        "avg_daily_turnover",
+        "avg_rebalance_turnover",
+        "median_rebalance_turnover",
+        "p95_rebalance_turnover",
+        "max_rebalance_turnover",
+        "avg_days_between_rebalances",
+        "max_contract_turnover_share",
+    ]
+    if weights.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    turnover = weights.diff().abs()
+    turnover.iloc[0] = weights.iloc[0].abs()
+    total_turnover = turnover.sum(axis=1)
+    rebalance_turnover = total_turnover[total_turnover > threshold]
+    rebalance_days = len(rebalance_turnover)
+
+    contract_turnover_share = turnover.div(total_turnover.replace(0.0, np.nan), axis=0).fillna(0.0)
+    rebalance_positions = np.flatnonzero(total_turnover.to_numpy() > threshold)
+    days_between = np.diff(rebalance_positions)
+
+    return pd.DataFrame(
+        [
+            {
+                "observations": float(len(weights)),
+                "rebalance_days": float(rebalance_days),
+                "rebalance_day_rate": float(rebalance_days / len(weights)),
+                "avg_daily_turnover": float(total_turnover.mean()),
+                "avg_rebalance_turnover": (
+                    float(rebalance_turnover.mean()) if not rebalance_turnover.empty else 0.0
+                ),
+                "median_rebalance_turnover": (
+                    float(rebalance_turnover.median()) if not rebalance_turnover.empty else 0.0
+                ),
+                "p95_rebalance_turnover": (
+                    float(rebalance_turnover.quantile(0.95))
+                    if not rebalance_turnover.empty
+                    else 0.0
+                ),
+                "max_rebalance_turnover": float(total_turnover.max()),
+                "avg_days_between_rebalances": (
+                    float(days_between.mean()) if len(days_between) > 0 else 0.0
+                ),
+                "max_contract_turnover_share": float(contract_turnover_share.max(axis=1).max()),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def signal_contribution_summary(
     weights: pd.DataFrame,
     returns: pd.DataFrame,

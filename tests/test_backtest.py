@@ -121,6 +121,18 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     } <= set(result.execution_costs_by_contract.columns)
     assert result.execution_costs_by_contract.index.name == "contract"
     assert {
+        "observations",
+        "rebalance_days",
+        "rebalance_day_rate",
+        "avg_daily_turnover",
+        "avg_rebalance_turnover",
+        "median_rebalance_turnover",
+        "p95_rebalance_turnover",
+        "max_rebalance_turnover",
+        "avg_days_between_rebalances",
+        "max_contract_turnover_share",
+    } <= set(result.rebalance.columns)
+    assert {
         "ann_gross_return",
         "ann_trend_attributed_return",
         "ann_carry_attributed_return",
@@ -198,6 +210,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
+    assert np.isfinite(result.rebalance.to_numpy()).all()
     assert np.isfinite(result.signal_contribution.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
     assert np.isfinite(result.selection_quality.to_numpy()).all()

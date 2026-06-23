@@ -9,6 +9,7 @@ from futures_backtester.analytics import (
     execution_cost_summary,
     parameter_grid_summary,
     performance_metrics,
+    rebalance_summary,
     return_distribution_summary,
     rolling_metrics,
     selection_quality_summary,
@@ -265,6 +266,51 @@ def test_execution_cost_by_contract_reconciles_to_portfolio_costs() -> None:
     )
     assert np.isclose(by_contract["ann_trade_cost"].sum(), portfolio.loc[0, "ann_trade_cost"])
     assert np.isclose(by_contract["ann_total_cost"].sum(), portfolio.loc[0, "ann_total_cost"])
+
+
+def test_rebalance_summary_measures_turnover_frequency_and_size() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [0.0, 0.5, 0.5, 0.25, 0.25],
+            "TY": [0.0, -0.5, -0.5, -0.25, 0.0],
+        }
+    )
+
+    summary = rebalance_summary(weights)
+
+    assert list(summary.columns) == [
+        "observations",
+        "rebalance_days",
+        "rebalance_day_rate",
+        "avg_daily_turnover",
+        "avg_rebalance_turnover",
+        "median_rebalance_turnover",
+        "p95_rebalance_turnover",
+        "max_rebalance_turnover",
+        "avg_days_between_rebalances",
+        "max_contract_turnover_share",
+    ]
+    assert summary.loc[0, "observations"] == 5.0
+    assert summary.loc[0, "rebalance_days"] == 3.0
+    assert summary.loc[0, "rebalance_day_rate"] == 0.6
+    assert np.isclose(summary.loc[0, "avg_daily_turnover"], 1.75 / 5)
+    assert np.isclose(summary.loc[0, "avg_rebalance_turnover"], 1.75 / 3)
+    assert summary.loc[0, "median_rebalance_turnover"] == 0.5
+    assert summary.loc[0, "max_rebalance_turnover"] == 1.0
+    assert summary.loc[0, "avg_days_between_rebalances"] == 1.5
+    assert summary.loc[0, "max_contract_turnover_share"] == 1.0
+
+
+def test_rebalance_summary_handles_empty_or_static_weights() -> None:
+    empty = rebalance_summary(pd.DataFrame())
+    static = rebalance_summary(pd.DataFrame({"ES": [0.0, 0.0], "TY": [0.0, 0.0]}))
+
+    assert empty.shape == (1, 10)
+    assert static.shape == (1, 10)
+    assert (empty.iloc[0] == 0.0).all()
+    assert static.loc[0, "observations"] == 2.0
+    assert static.loc[0, "rebalance_days"] == 0.0
+    assert static.loc[0, "max_contract_turnover_share"] == 0.0
 
 
 def test_signal_contribution_summary_reconciles_gross_return_attribution() -> None:

@@ -48,6 +48,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/drawdowns.csv`
 - `reports/generated/execution_costs.csv`
 - `reports/generated/execution_costs_by_contract.csv`
+- `reports/generated/rebalance.csv`
 - `reports/generated/signal_contribution.csv`
 - `reports/generated/walk_forward_summary.csv`
 - `reports/generated/selection_quality.csv`
@@ -112,6 +113,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Drawdown episode diagnostics covering depth, length, trough, and recovery.
 - Turnover and execution cost diagnostics split across roll, commission, and
   slippage drag.
+- Rebalance diagnostics covering turnover frequency, rebalance size, spacing,
+  and single-contract turnover concentration.
 - Signal contribution diagnostics attributing selected walk-forward gross
   return and allocation exposure to trend and carry components.
 - Deterministic output manifests with byte sizes, SHA-256 checksums, and CSV

@@ -86,6 +86,7 @@ def run(
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
+    result.rebalance.to_csv(output_dir / "rebalance.csv", index=False)
     result.signal_contribution.to_csv(output_dir / "signal_contribution.csv", index=False)
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.selection_quality.to_csv(output_dir / "selection_quality.csv", index=False)
@@ -106,6 +107,7 @@ def run(
         "drawdowns.csv",
         "execution_costs.csv",
         "execution_costs_by_contract.csv",
+        "rebalance.csv",
         "signal_contribution.csv",
         "walk_forward_summary.csv",
         "selection_quality.csv",
@@ -130,6 +132,7 @@ def run(
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     execution_costs = result.execution_costs.iloc[0]
+    rebalance = result.rebalance.iloc[0]
     top_contract_cost = (
         result.execution_costs_by_contract.iloc[0]
         if not result.execution_costs_by_contract.empty
@@ -235,6 +238,15 @@ def run(
         f"- Annualized roll cost: {execution_costs['ann_roll_cost']:.2%}\n"
         f"- Annualized trade cost: {execution_costs['ann_trade_cost']:.2%}\n"
         f"- Annualized total cost: {execution_costs['ann_total_cost']:.2%}\n\n"
+        "Rebalance diagnostics:\n\n"
+        f"- Rebalance days: {rebalance['rebalance_days']:.0f} "
+        f"({rebalance['rebalance_day_rate']:.0%} of evaluated days)\n"
+        f"- Average rebalance turnover: {rebalance['avg_rebalance_turnover']:.2f}\n"
+        f"- 95th percentile rebalance turnover: {rebalance['p95_rebalance_turnover']:.2f}\n"
+        f"- Average days between rebalances: "
+        f"{rebalance['avg_days_between_rebalances']:.1f}\n"
+        f"- Largest single-contract share of a rebalance: "
+        f"{rebalance['max_contract_turnover_share']:.0%}\n\n"
         "Contract cost diagnostics:\n\n"
         f"{contract_cost_line}\n"
         "Signal contribution diagnostics:\n\n"

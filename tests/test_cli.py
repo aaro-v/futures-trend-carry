@@ -36,6 +36,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
+    assert (out_dir / "rebalance.csv").exists()
     assert (out_dir / "signal_contribution.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
     assert (out_dir / "selection_quality.csv").exists()
@@ -60,6 +61,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "parameter_grid.csv",
         "parameter_grid_summary.csv",
         "execution_costs_by_contract.csv",
+        "rebalance.csv",
         "signal_contribution.csv",
         "selection_quality.csv",
         "equity_curve.png",
@@ -109,5 +111,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Positive Sharpe probability" in report
     assert "Contract cost diagnostics" in report
     assert "Highest annualized contract cost" in report
+    assert "Rebalance diagnostics" in report
+    assert "Average rebalance turnover" in report
     assert "Signal contribution diagnostics" in report
     assert "Trend-attributed gross return" in report
