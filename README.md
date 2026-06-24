@@ -54,6 +54,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/selection_quality.csv`
 - `reports/generated/bootstrap_bands.csv`
 - `reports/generated/bootstrap_reliability.csv`
+- `reports/generated/run_config.csv`
 - `reports/generated/equity_curve.png`
 - `reports/generated/research_report.md`
 - `reports/generated/output_manifest.csv`
@@ -117,6 +118,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   and single-contract turnover concentration.
 - Signal contribution diagnostics attributing selected walk-forward gross
   return and allocation exposure to trend and carry components.
+- Run configuration artifacts capturing the deterministic sample size, seed,
+  walk-forward settings, target volatility, and bootstrap settings.
 - Deterministic output manifests with byte sizes, SHA-256 checksums, and CSV
   dimensions for generated research artifacts.
 

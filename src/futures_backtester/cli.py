@@ -41,6 +41,33 @@ def _artifact_manifest(output_dir: Path, artifact_names: list[str]) -> pd.DataFr
     return pd.DataFrame(rows)
 
 
+def _run_config(
+    *,
+    days: int,
+    contracts: int,
+    seed: int,
+    settings: BacktestSettings,
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "days": days,
+                "contracts": contracts,
+                "seed": seed,
+                "target_vol": settings.target_vol,
+                "slippage_bps": settings.slippage_bps,
+                "bootstrap_samples": settings.bootstrap_samples,
+                "rolling_window": settings.rolling_window,
+                "rolling_min_periods": settings.rolling_min_periods,
+                "train_days": settings.train_days,
+                "test_days": settings.test_days,
+                "trend_lookbacks": "|".join(str(value) for value in settings.trend_lookbacks),
+                "carry_weights": "|".join(f"{value:g}" for value in settings.carry_weights),
+            }
+        ]
+    )
+
+
 @app.command()
 def sample_data(
     output: Annotated[
@@ -66,12 +93,17 @@ def run(
     contracts: Annotated[int, typer.Option(min=4)] = 50,
     bootstrap_samples: Annotated[int, typer.Option(min=20)] = 500,
     target_vol: Annotated[float, typer.Option(min=0.01, max=1.0)] = 0.12,
+    seed: Annotated[int, typer.Option(help="Synthetic data random seed.")] = 7,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    panel = make_sample_panel(days=days, contracts=contracts)
+    panel = make_sample_panel(days=days, contracts=contracts, seed=seed)
     settings = BacktestSettings(bootstrap_samples=bootstrap_samples, target_vol=target_vol)
     result = run_backtest(panel, settings)
 
+    _run_config(days=days, contracts=contracts, seed=seed, settings=settings).to_csv(
+        output_dir / "run_config.csv",
+        index=False,
+    )
     result.summary.to_csv(output_dir / "summary.csv", index=False)
     result.return_distribution.to_csv(output_dir / "return_distribution.csv", index=False)
     result.rolling_metrics.to_csv(output_dir / "rolling_metrics.csv")
@@ -93,6 +125,7 @@ def run(
     result.bootstrap_bands.to_csv(output_dir / "bootstrap_bands.csv")
     result.bootstrap_reliability.to_csv(output_dir / "bootstrap_reliability.csv", index=False)
     artifact_names = [
+        "run_config.csv",
         "summary.csv",
         "return_distribution.csv",
         "rolling_metrics.csv",
@@ -167,6 +200,9 @@ def run(
     report = (
         "# Research Report\n\n"
         "Synthetic global futures trend and carry backtest.\n\n"
+        f"- Run configuration: {days} business days, {contracts} contracts, "
+        f"seed {seed}, {bootstrap_samples} bootstrap samples, "
+        f"{target_vol:.0%} target volatility\n"
         f"- Annualized return: {summary['ann_return']:.2%}\n"
         f"- Annualized volatility: {summary['ann_vol']:.2%}\n"
         f"- Sharpe: {summary['sharpe']:.2f}\n"

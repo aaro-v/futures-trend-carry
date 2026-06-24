@@ -20,10 +20,13 @@ def test_cli_generates_outputs(tmp_path) -> None:
             "8",
             "--bootstrap-samples",
             "25",
+            "--seed",
+            "11",
         ],
     )
 
     assert result.exit_code == 0, result.output
+    assert (out_dir / "run_config.csv").exists()
     assert (out_dir / "summary.csv").exists()
     assert (out_dir / "return_distribution.csv").exists()
     assert (out_dir / "rolling_metrics.csv").exists()
@@ -52,6 +55,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "columns",
     } == set(manifest.columns)
     assert {
+        "run_config.csv",
         "summary.csv",
         "return_distribution.csv",
         "rolling_metrics.csv",
@@ -70,6 +74,26 @@ def test_cli_generates_outputs(tmp_path) -> None:
     } <= set(manifest["artifact"])
     assert manifest["artifact"].is_unique
     assert manifest["sha256"].str.fullmatch(r"[0-9a-f]{64}").all()
+    config = pd.read_csv(out_dir / "run_config.csv")
+    assert config.to_dict("records") == [
+        {
+            "days": 620,
+            "contracts": 8,
+            "seed": 11,
+            "target_vol": 0.12,
+            "slippage_bps": 0.75,
+            "bootstrap_samples": 25,
+            "rolling_window": 252,
+            "rolling_min_periods": 63,
+            "train_days": 504,
+            "test_days": 126,
+            "trend_lookbacks": "63|126|252",
+            "carry_weights": "0|0.35|0.65",
+        }
+    ]
+    config_row = manifest.set_index("artifact").loc["run_config.csv"]
+    assert config_row["rows"] == 1
+    assert config_row["columns"] == 12
     summary_row = manifest.set_index("artifact").loc["summary.csv"]
     assert summary_row["rows"] == 1
     assert summary_row["columns"] >= 8
@@ -94,6 +118,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "positive_test_sharpe_rate",
     } <= set(parameter_grid_summary.columns)
     report = (out_dir / "research_report.md").read_text(encoding="utf-8")
+    assert "Run configuration" in report
+    assert "seed 11" in report
     assert "Sortino" in report
     assert "Calmar" in report
     assert "Daily hit rate" in report
