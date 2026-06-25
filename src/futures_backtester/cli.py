@@ -116,6 +116,7 @@ def run(
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
+    result.path_stress.to_csv(output_dir / "path_stress.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
     result.rebalance.to_csv(output_dir / "rebalance.csv", index=False)
@@ -138,6 +139,7 @@ def run(
         "sector_exposure.csv",
         "concentration.csv",
         "drawdowns.csv",
+        "path_stress.csv",
         "execution_costs.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
@@ -164,6 +166,7 @@ def run(
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
+    worst_path_stress = result.path_stress.iloc[0] if not result.path_stress.empty else None
     execution_costs = result.execution_costs.iloc[0]
     rebalance = result.rebalance.iloc[0]
     top_contract_cost = (
@@ -189,6 +192,14 @@ def run(
         f"with {rolling['max_drawdown']:.2%} max drawdown\n"
         if rolling is not None
         else "- Latest rolling Sharpe: unavailable for this sample length\n"
+    )
+    path_stress_line = (
+        f"- Worst {int(worst_path_stress['horizon_days'])}-day path: "
+        f"{worst_path_stress['cumulative_return']:.2%} "
+        f"from {worst_path_stress['start']} to {worst_path_stress['end']} "
+        f"(Sharpe {worst_path_stress['sharpe']:.2f})\n"
+        if worst_path_stress is not None
+        else "- Worst rolling path: unavailable for this sample length\n"
     )
     contract_cost_line = (
         f"- Highest annualized contract cost: {top_contract_cost.name} "
@@ -269,6 +280,8 @@ def run(
         f"- Median resampled CVaR 5%: {bootstrap_reliability['median_cvar_5']:.2%}\n\n"
         "Drawdown diagnostics:\n\n"
         f"{drawdown_line}\n"
+        "Path stress diagnostics:\n\n"
+        f"{path_stress_line}\n"
         "Execution diagnostics:\n\n"
         f"- Annualized turnover: {execution_costs['annualized_turnover']:.1f}x\n"
         f"- Annualized roll cost: {execution_costs['ann_roll_cost']:.2%}\n"

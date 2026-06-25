@@ -99,6 +99,18 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "recovery_days",
     } <= set(result.drawdowns.columns)
     assert {
+        "horizon_days",
+        "rank",
+        "start",
+        "end",
+        "cumulative_return",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    } <= set(result.path_stress.columns)
+    assert not result.path_stress.empty
+    assert {
         "avg_daily_turnover",
         "annualized_turnover",
         "ann_roll_cost",
@@ -208,6 +220,11 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     ).all()
     assert np.isfinite(result.concentration.to_numpy()).all()
     assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
+    assert np.isfinite(
+        result.path_stress[
+            ["horizon_days", "rank", "cumulative_return", "ann_return", "ann_vol", "sharpe"]
+        ].to_numpy()
+    ).all()
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.rebalance.to_numpy()).all()

@@ -12,6 +12,7 @@ from futures_backtester.backtesting.analytics import (
     execution_cost_by_contract,
     execution_cost_summary,
     parameter_grid_summary,
+    path_stress_summary,
     performance_metrics,
     rebalance_summary,
     regime_metrics,
@@ -63,6 +64,7 @@ class BacktestResult:
     sector_exposure: pd.DataFrame
     concentration: pd.DataFrame
     drawdowns: pd.DataFrame
+    path_stress: pd.DataFrame
     execution_costs: pd.DataFrame
     execution_costs_by_contract: pd.DataFrame
     rebalance: pd.DataFrame
@@ -199,6 +201,7 @@ def run_backtest(
         sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
         concentration=concentration_summary(stitched_weights.loc[live.index]),
         drawdowns=drawdown_summary(live),
+        path_stress=path_stress_summary(live),
         execution_costs=execution_cost_summary(
             stitched_weights.loc[live.index],
             panel.roll_cost_bps,

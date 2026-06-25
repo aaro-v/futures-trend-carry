@@ -46,6 +46,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/sector_exposure.csv`
 - `reports/generated/concentration.csv`
 - `reports/generated/drawdowns.csv`
+- `reports/generated/path_stress.csv`
 - `reports/generated/execution_costs.csv`
 - `reports/generated/execution_costs_by_contract.csv`
 - `reports/generated/rebalance.csv`
@@ -112,6 +113,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
 - Contract concentration diagnostics, including top-5 gross exposure share,
   HHI, and effective contract count.
 - Drawdown episode diagnostics covering depth, length, trough, and recovery.
+- Path stress diagnostics ranking the worst rolling return windows across
+  multiple review horizons.
 - Turnover and execution cost diagnostics split across roll, commission, and
   slippage drag.
 - Rebalance diagnostics covering turnover frequency, rebalance size, spacing,

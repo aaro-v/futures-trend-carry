@@ -155,6 +155,53 @@ def drawdown_summary(returns: pd.Series, top_n: int = 5) -> pd.DataFrame:
     )
 
 
+def path_stress_summary(
+    returns: pd.Series,
+    horizons: tuple[int, ...] = (21, 63, 126),
+    top_n: int = 3,
+) -> pd.DataFrame:
+    columns = [
+        "horizon_days",
+        "rank",
+        "start",
+        "end",
+        "cumulative_return",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    ]
+    clean = returns.dropna()
+    if clean.empty or top_n <= 0:
+        return pd.DataFrame(columns=columns)
+
+    rows = []
+    for horizon in horizons:
+        if horizon <= 0 or len(clean) < horizon:
+            continue
+        window_growth = (1.0 + clean).rolling(horizon).apply(np.prod, raw=True) - 1.0
+        worst_windows = window_growth.dropna().nsmallest(top_n, keep="first")
+        for rank, (end_date, cumulative_return) in enumerate(worst_windows.items(), start=1):
+            end_position = clean.index.get_loc(end_date)
+            window_returns = clean.iloc[end_position - horizon + 1 : end_position + 1]
+            metrics = performance_metrics(window_returns)
+            rows.append(
+                {
+                    "horizon_days": float(horizon),
+                    "rank": float(rank),
+                    "start": window_returns.index[0],
+                    "end": end_date,
+                    "cumulative_return": float(cumulative_return),
+                    "ann_return": metrics["ann_return"],
+                    "ann_vol": metrics["ann_vol"],
+                    "sharpe": metrics["sharpe"],
+                    "max_drawdown": metrics["max_drawdown"],
+                }
+            )
+
+    return pd.DataFrame(rows, columns=columns)
+
+
 def regime_metrics(returns: pd.Series, prices: pd.DataFrame) -> pd.DataFrame:
     market_proxy = prices.pct_change().mean(axis=1).reindex(returns.index).fillna(0.0)
     vol = market_proxy.rolling(63).std().bfill()

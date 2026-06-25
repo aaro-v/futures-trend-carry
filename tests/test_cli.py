@@ -37,6 +37,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "sector_exposure.csv").exists()
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
+    assert (out_dir / "path_stress.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
     assert (out_dir / "rebalance.csv").exists()
@@ -64,6 +65,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "walk_forward_selections.csv",
         "parameter_grid.csv",
         "parameter_grid_summary.csv",
+        "path_stress.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
         "signal_contribution.csv",
@@ -133,6 +135,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Parameter grid diagnostics" in report
     assert "Best average test Sharpe candidate" in report
     assert "Drawdown diagnostics" in report
+    assert "Path stress diagnostics" in report
+    assert "Worst 21-day path" in report
     assert "Bootstrap reliability" in report
     assert "Positive Sharpe probability" in report
     assert "Contract cost diagnostics" in report

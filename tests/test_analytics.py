@@ -8,6 +8,7 @@ from futures_backtester.analytics import (
     execution_cost_by_contract,
     execution_cost_summary,
     parameter_grid_summary,
+    path_stress_summary,
     performance_metrics,
     rebalance_summary,
     return_distribution_summary,
@@ -154,6 +155,46 @@ def test_drawdown_summary_marks_unrecovered_episode() -> None:
     assert pd.isna(summary.loc[0, "recovery"])
     assert pd.isna(summary.loc[0, "recovery_days"])
     assert summary.loc[0, "length_days"] == 2
+
+
+def test_path_stress_summary_ranks_worst_rolling_windows() -> None:
+    returns = pd.Series(
+        [0.01, -0.03, -0.02, 0.01, -0.04, 0.02],
+        index=pd.date_range("2024-01-01", periods=6),
+    )
+
+    summary = path_stress_summary(returns, horizons=(3,), top_n=2)
+
+    assert list(summary.columns) == [
+        "horizon_days",
+        "rank",
+        "start",
+        "end",
+        "cumulative_return",
+        "ann_return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+    ]
+    assert summary["horizon_days"].tolist() == [3.0, 3.0]
+    assert summary["rank"].tolist() == [1.0, 2.0]
+    assert summary.loc[0, "start"] == returns.index[2]
+    assert summary.loc[0, "end"] == returns.index[4]
+    expected_worst = (1.0 - 0.02) * (1.0 + 0.01) * (1.0 - 0.04) - 1.0
+    assert np.isclose(summary.loc[0, "cumulative_return"], expected_worst)
+    assert summary.loc[0, "cumulative_return"] <= summary.loc[1, "cumulative_return"]
+    assert np.isfinite(summary[["ann_return", "ann_vol", "sharpe", "max_drawdown"]]).all(
+        axis=None
+    )
+
+
+def test_path_stress_summary_handles_empty_or_short_returns() -> None:
+    empty = path_stress_summary(pd.Series(dtype=float))
+    short = path_stress_summary(pd.Series([0.01, -0.02]), horizons=(3,), top_n=2)
+
+    assert empty.empty
+    assert short.empty
+    assert list(empty.columns) == list(short.columns)
 
 
 def test_concentration_summary_handles_zero_exposure() -> None:
