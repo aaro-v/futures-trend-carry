@@ -145,6 +145,20 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
         "max_contract_turnover_share",
     } <= set(result.rebalance.columns)
     assert {
+        "observations",
+        "avg_gross_exposure",
+        "avg_net_exposure",
+        "avg_abs_net_exposure",
+        "avg_daily_gross_exposure_change",
+        "max_daily_gross_exposure_change",
+        "gross_exposure_change_vol",
+        "avg_active_contracts",
+        "avg_entries",
+        "avg_exits",
+        "avg_sign_flips",
+        "max_sign_flips",
+    } <= set(result.exposure_changes.columns)
+    assert {
         "ann_gross_return",
         "ann_trend_attributed_return",
         "ann_carry_attributed_return",
@@ -228,6 +242,7 @@ def test_run_backtest_outputs_reviewer_artifacts() -> None:
     assert np.isfinite(result.execution_costs.to_numpy()).all()
     assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
     assert np.isfinite(result.rebalance.to_numpy()).all()
+    assert np.isfinite(result.exposure_changes.to_numpy()).all()
     assert np.isfinite(result.signal_contribution.to_numpy()).all()
     assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
     assert np.isfinite(result.selection_quality.to_numpy()).all()

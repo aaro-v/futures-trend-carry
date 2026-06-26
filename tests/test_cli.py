@@ -41,6 +41,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
     assert (out_dir / "rebalance.csv").exists()
+    assert (out_dir / "exposure_changes.csv").exists()
     assert (out_dir / "signal_contribution.csv").exists()
     assert (out_dir / "walk_forward_summary.csv").exists()
     assert (out_dir / "selection_quality.csv").exists()
@@ -68,6 +69,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "path_stress.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
+        "exposure_changes.csv",
         "signal_contribution.csv",
         "selection_quality.csv",
         "equity_curve.png",
@@ -143,5 +145,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Highest annualized contract cost" in report
     assert "Rebalance diagnostics" in report
     assert "Average rebalance turnover" in report
+    assert "Exposure change diagnostics" in report
+    assert "Average active contracts" in report
     assert "Signal contribution diagnostics" in report
     assert "Trend-attributed gross return" in report

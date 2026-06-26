@@ -120,6 +120,7 @@ def run(
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
     result.rebalance.to_csv(output_dir / "rebalance.csv", index=False)
+    result.exposure_changes.to_csv(output_dir / "exposure_changes.csv", index=False)
     result.signal_contribution.to_csv(output_dir / "signal_contribution.csv", index=False)
     result.walk_forward_summary.to_csv(output_dir / "walk_forward_summary.csv", index=False)
     result.selection_quality.to_csv(output_dir / "selection_quality.csv", index=False)
@@ -143,6 +144,7 @@ def run(
         "execution_costs.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
+        "exposure_changes.csv",
         "signal_contribution.csv",
         "walk_forward_summary.csv",
         "selection_quality.csv",
@@ -169,6 +171,7 @@ def run(
     worst_path_stress = result.path_stress.iloc[0] if not result.path_stress.empty else None
     execution_costs = result.execution_costs.iloc[0]
     rebalance = result.rebalance.iloc[0]
+    exposure_changes = result.exposure_changes.iloc[0]
     top_contract_cost = (
         result.execution_costs_by_contract.iloc[0]
         if not result.execution_costs_by_contract.empty
@@ -296,6 +299,17 @@ def run(
         f"{rebalance['avg_days_between_rebalances']:.1f}\n"
         f"- Largest single-contract share of a rebalance: "
         f"{rebalance['max_contract_turnover_share']:.0%}\n\n"
+        "Exposure change diagnostics:\n\n"
+        f"- Average gross exposure: {exposure_changes['avg_gross_exposure']:.2f}\n"
+        f"- Average active contracts: {exposure_changes['avg_active_contracts']:.1f}\n"
+        f"- Average daily gross exposure change: "
+        f"{exposure_changes['avg_daily_gross_exposure_change']:.2f}\n"
+        f"- Maximum daily gross exposure change: "
+        f"{exposure_changes['max_daily_gross_exposure_change']:.2f}\n"
+        f"- Average daily entries/exits/sign flips: "
+        f"{exposure_changes['avg_entries']:.1f} / "
+        f"{exposure_changes['avg_exits']:.1f} / "
+        f"{exposure_changes['avg_sign_flips']:.1f}\n\n"
         "Contract cost diagnostics:\n\n"
         f"{contract_cost_line}\n"
         "Signal contribution diagnostics:\n\n"

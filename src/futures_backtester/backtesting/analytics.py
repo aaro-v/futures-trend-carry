@@ -441,6 +441,59 @@ def rebalance_summary(weights: pd.DataFrame, threshold: float = 1e-12) -> pd.Dat
     )
 
 
+def exposure_change_summary(weights: pd.DataFrame, threshold: float = 1e-12) -> pd.DataFrame:
+    columns = [
+        "observations",
+        "avg_gross_exposure",
+        "avg_net_exposure",
+        "avg_abs_net_exposure",
+        "avg_daily_gross_exposure_change",
+        "max_daily_gross_exposure_change",
+        "gross_exposure_change_vol",
+        "avg_active_contracts",
+        "avg_entries",
+        "avg_exits",
+        "avg_sign_flips",
+        "max_sign_flips",
+    ]
+    if weights.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    gross_exposure = weights.abs().sum(axis=1)
+    net_exposure = weights.sum(axis=1)
+    gross_change = gross_exposure.diff().abs()
+    gross_change.iloc[0] = gross_exposure.iloc[0]
+
+    active = weights.abs() > threshold
+    prior_active = active.shift(1, fill_value=False)
+    entries = active & ~prior_active
+    exits = ~active & prior_active
+
+    signs = np.sign(weights.where(active, 0.0))
+    prior_signs = signs.shift(1, fill_value=0.0)
+    sign_flips = active & prior_active & signs.ne(prior_signs)
+
+    return pd.DataFrame(
+        [
+            {
+                "observations": float(len(weights)),
+                "avg_gross_exposure": float(gross_exposure.mean()),
+                "avg_net_exposure": float(net_exposure.mean()),
+                "avg_abs_net_exposure": float(net_exposure.abs().mean()),
+                "avg_daily_gross_exposure_change": float(gross_change.mean()),
+                "max_daily_gross_exposure_change": float(gross_change.max()),
+                "gross_exposure_change_vol": float(gross_change.std(ddof=0)),
+                "avg_active_contracts": float(active.sum(axis=1).mean()),
+                "avg_entries": float(entries.sum(axis=1).mean()),
+                "avg_exits": float(exits.sum(axis=1).mean()),
+                "avg_sign_flips": float(sign_flips.sum(axis=1).mean()),
+                "max_sign_flips": float(sign_flips.sum(axis=1).max()),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def signal_contribution_summary(
     weights: pd.DataFrame,
     returns: pd.DataFrame,

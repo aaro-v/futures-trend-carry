@@ -7,6 +7,7 @@ from futures_backtester.analytics import (
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
+    exposure_change_summary,
     parameter_grid_summary,
     path_stress_summary,
     performance_metrics,
@@ -352,6 +353,57 @@ def test_rebalance_summary_handles_empty_or_static_weights() -> None:
     assert static.loc[0, "observations"] == 2.0
     assert static.loc[0, "rebalance_days"] == 0.0
     assert static.loc[0, "max_contract_turnover_share"] == 0.0
+
+
+def test_exposure_change_summary_measures_contract_churn_and_sign_flips() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [0.0, 0.5, -0.25, -0.25],
+            "TY": [0.0, -0.5, -0.5, 0.0],
+            "CL": [0.0, 0.0, 0.25, 0.25],
+        }
+    )
+
+    summary = exposure_change_summary(weights)
+
+    assert list(summary.columns) == [
+        "observations",
+        "avg_gross_exposure",
+        "avg_net_exposure",
+        "avg_abs_net_exposure",
+        "avg_daily_gross_exposure_change",
+        "max_daily_gross_exposure_change",
+        "gross_exposure_change_vol",
+        "avg_active_contracts",
+        "avg_entries",
+        "avg_exits",
+        "avg_sign_flips",
+        "max_sign_flips",
+    ]
+    assert summary.loc[0, "observations"] == 4.0
+    assert summary.loc[0, "avg_gross_exposure"] == 0.625
+    assert summary.loc[0, "avg_net_exposure"] == -0.125
+    assert summary.loc[0, "avg_abs_net_exposure"] == 0.125
+    assert summary.loc[0, "avg_daily_gross_exposure_change"] == 0.375
+    assert summary.loc[0, "max_daily_gross_exposure_change"] == 1.0
+    assert summary.loc[0, "avg_active_contracts"] == 1.75
+    assert summary.loc[0, "avg_entries"] == 0.75
+    assert summary.loc[0, "avg_exits"] == 0.25
+    assert summary.loc[0, "avg_sign_flips"] == 0.25
+    assert summary.loc[0, "max_sign_flips"] == 1.0
+    assert summary.loc[0, "gross_exposure_change_vol"] > 0.0
+
+
+def test_exposure_change_summary_handles_empty_or_static_weights() -> None:
+    empty = exposure_change_summary(pd.DataFrame())
+    static = exposure_change_summary(pd.DataFrame({"ES": [0.0, 0.0], "TY": [0.0, 0.0]}))
+
+    assert empty.shape == (1, 12)
+    assert static.shape == (1, 12)
+    assert (empty.iloc[0] == 0.0).all()
+    assert static.loc[0, "observations"] == 2.0
+    assert static.loc[0, "avg_active_contracts"] == 0.0
+    assert static.loc[0, "max_sign_flips"] == 0.0
 
 
 def test_signal_contribution_summary_reconciles_gross_return_attribution() -> None:

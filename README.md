@@ -50,6 +50,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/execution_costs.csv`
 - `reports/generated/execution_costs_by_contract.csv`
 - `reports/generated/rebalance.csv`
+- `reports/generated/exposure_changes.csv`
 - `reports/generated/signal_contribution.csv`
 - `reports/generated/walk_forward_summary.csv`
 - `reports/generated/selection_quality.csv`
@@ -119,6 +120,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   slippage drag.
 - Rebalance diagnostics covering turnover frequency, rebalance size, spacing,
   and single-contract turnover concentration.
+- Exposure change diagnostics covering gross exposure drift, active contract
+  counts, entries, exits, and sign flips.
 - Signal contribution diagnostics attributing selected walk-forward gross
   return and allocation exposure to trend and carry components.
 - Run configuration artifacts capturing the deterministic sample size, seed,

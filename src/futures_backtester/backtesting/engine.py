@@ -11,6 +11,7 @@ from futures_backtester.backtesting.analytics import (
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
+    exposure_change_summary,
     parameter_grid_summary,
     path_stress_summary,
     performance_metrics,
@@ -68,6 +69,7 @@ class BacktestResult:
     execution_costs: pd.DataFrame
     execution_costs_by_contract: pd.DataFrame
     rebalance: pd.DataFrame
+    exposure_changes: pd.DataFrame
     signal_contribution: pd.DataFrame
     walk_forward_summary: pd.DataFrame
     parameter_grid_summary: pd.DataFrame
@@ -215,6 +217,7 @@ def run_backtest(
             settings.slippage_bps,
         ),
         rebalance=rebalance_summary(stitched_weights.loc[live.index]),
+        exposure_changes=exposure_change_summary(stitched_weights.loc[live.index]),
         signal_contribution=signal_contribution_summary(
             stitched_weights.loc[live.index],
             daily_returns(panel.prices).loc[live.index],
