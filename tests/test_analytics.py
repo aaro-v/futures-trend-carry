@@ -4,6 +4,7 @@ import pandas as pd
 from futures_backtester.analytics import (
     bootstrap_reliability_summary,
     concentration_summary,
+    diversification_summary,
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
@@ -221,6 +222,53 @@ def test_concentration_summary_reports_effective_contract_count() -> None:
 
     assert 2.0 < summary.loc[0, "effective_contract_count"] < 3.0
     assert summary.loc[0, "avg_top_5_gross_share"] == 1.0
+
+
+def test_diversification_summary_measures_weighted_leg_vol_benefit() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [1.0, 1.0, 1.0, 1.0],
+            "TY": [1.0, 1.0, 1.0, 1.0],
+        }
+    )
+    returns = pd.DataFrame(
+        {
+            "ES": [0.01, -0.01, 0.01, -0.01],
+            "TY": [-0.005, 0.005, -0.005, 0.005],
+        }
+    )
+
+    summary = diversification_summary(weights, returns)
+
+    assert list(summary.columns) == [
+        "ann_portfolio_gross_vol",
+        "ann_sum_component_vol",
+        "diversification_ratio",
+        "vol_reduction",
+        "avg_pairwise_corr",
+        "max_pairwise_corr",
+        "contracts_with_risk",
+    ]
+    assert summary.loc[0, "ann_sum_component_vol"] > 0.0
+    assert summary.loc[0, "ann_portfolio_gross_vol"] < summary.loc[0, "ann_sum_component_vol"]
+    assert summary.loc[0, "diversification_ratio"] > 1.0
+    assert summary.loc[0, "vol_reduction"] > 0.0
+    assert summary.loc[0, "avg_pairwise_corr"] < 0.0
+    assert summary.loc[0, "max_pairwise_corr"] < 0.0
+    assert summary.loc[0, "contracts_with_risk"] == 2.0
+
+
+def test_diversification_summary_handles_empty_and_zero_risk_inputs() -> None:
+    empty = diversification_summary(pd.DataFrame(), pd.DataFrame())
+    zero_risk = diversification_summary(
+        pd.DataFrame({"ES": [0.0, 0.0], "TY": [0.0, 0.0]}),
+        pd.DataFrame({"ES": [0.01, -0.01], "TY": [-0.01, 0.01]}),
+    )
+
+    assert empty.shape == (1, 7)
+    assert zero_risk.shape == (1, 7)
+    assert (empty.iloc[0] == 0.0).all()
+    assert (zero_risk.iloc[0] == 0.0).all()
 
 
 def test_execution_cost_summary_separates_roll_and_trade_costs() -> None:

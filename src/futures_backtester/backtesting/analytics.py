@@ -296,6 +296,57 @@ def concentration_summary(weights: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def diversification_summary(weights: pd.DataFrame, returns: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        "ann_portfolio_gross_vol",
+        "ann_sum_component_vol",
+        "diversification_ratio",
+        "vol_reduction",
+        "avg_pairwise_corr",
+        "max_pairwise_corr",
+        "contracts_with_risk",
+    ]
+    if weights.empty:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    aligned_returns = returns.reindex(index=weights.index, columns=weights.columns).fillna(0.0)
+    prior_weights = weights.shift(1).fillna(0.0)
+    weighted_leg_returns = prior_weights * aligned_returns
+    portfolio_gross_return = weighted_leg_returns.sum(axis=1)
+
+    portfolio_vol = float(portfolio_gross_return.std(ddof=0) * np.sqrt(252))
+    component_vol = weighted_leg_returns.std(ddof=0) * np.sqrt(252)
+    active_component_vol = component_vol[component_vol > 0.0]
+    sum_component_vol = float(active_component_vol.sum())
+    diversification_ratio = sum_component_vol / portfolio_vol if portfolio_vol > 0.0 else 0.0
+    vol_reduction = 1.0 - portfolio_vol / sum_component_vol if sum_component_vol > 0.0 else 0.0
+
+    avg_pairwise_corr = 0.0
+    max_pairwise_corr = 0.0
+    if len(active_component_vol) >= 2:
+        corr = weighted_leg_returns[active_component_vol.index].corr()
+        upper_triangle = np.triu(np.ones(corr.shape, dtype=bool), k=1)
+        pairwise_corr = corr.where(upper_triangle).stack()
+        if not pairwise_corr.empty:
+            avg_pairwise_corr = float(pairwise_corr.mean())
+            max_pairwise_corr = float(pairwise_corr.max())
+
+    return pd.DataFrame(
+        [
+            {
+                "ann_portfolio_gross_vol": portfolio_vol,
+                "ann_sum_component_vol": sum_component_vol,
+                "diversification_ratio": float(diversification_ratio),
+                "vol_reduction": float(vol_reduction),
+                "avg_pairwise_corr": avg_pairwise_corr,
+                "max_pairwise_corr": max_pairwise_corr,
+                "contracts_with_risk": float(len(active_component_vol)),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def execution_cost_summary(
     weights: pd.DataFrame,
     roll_cost_bps: pd.DataFrame,

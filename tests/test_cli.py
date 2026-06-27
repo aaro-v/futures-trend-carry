@@ -36,6 +36,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "parameter_grid_summary.csv").exists()
     assert (out_dir / "sector_exposure.csv").exists()
     assert (out_dir / "concentration.csv").exists()
+    assert (out_dir / "diversification.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "path_stress.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
@@ -66,6 +67,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "walk_forward_selections.csv",
         "parameter_grid.csv",
         "parameter_grid_summary.csv",
+        "diversification.csv",
         "path_stress.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
@@ -104,6 +106,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     distribution_row = manifest.set_index("artifact").loc["return_distribution.csv"]
     assert distribution_row["rows"] == 1
     assert distribution_row["columns"] == 12
+    diversification_row = manifest.set_index("artifact").loc["diversification.csv"]
+    assert diversification_row["rows"] == 1
+    assert diversification_row["columns"] == 7
     rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
     assert rolling_row["rows"] >= 1
     assert rolling_row["columns"] == 7
@@ -129,6 +134,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Daily hit rate" in report
     assert "Positive months" in report
     assert "rolling Sharpe" in report
+    assert "Gross-vol diversification ratio" in report
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report
     assert "Train-to-test Sharpe degradation" in report
@@ -149,3 +155,4 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Average active contracts" in report
     assert "Signal contribution diagnostics" in report
     assert "Trend-attributed gross return" in report
+    assert "Diversification diagnostics" in report

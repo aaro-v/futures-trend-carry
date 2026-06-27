@@ -8,6 +8,7 @@ from futures_backtester.backtesting.analytics import (
     bootstrap_bands,
     bootstrap_reliability_summary,
     concentration_summary,
+    diversification_summary,
     drawdown_summary,
     execution_cost_by_contract,
     execution_cost_summary,
@@ -64,6 +65,7 @@ class BacktestResult:
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
     concentration: pd.DataFrame
+    diversification: pd.DataFrame
     drawdowns: pd.DataFrame
     path_stress: pd.DataFrame
     execution_costs: pd.DataFrame
@@ -202,6 +204,10 @@ def run_backtest(
         regime_metrics=regime_metrics(live, panel.prices),
         sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
         concentration=concentration_summary(stitched_weights.loc[live.index]),
+        diversification=diversification_summary(
+            stitched_weights.loc[live.index],
+            daily_returns(panel.prices).loc[live.index],
+        ),
         drawdowns=drawdown_summary(live),
         path_stress=path_stress_summary(live),
         execution_costs=execution_cost_summary(

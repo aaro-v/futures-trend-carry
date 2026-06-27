@@ -115,6 +115,7 @@ def run(
     result.regime_metrics.to_csv(output_dir / "regime_metrics.csv")
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
+    result.diversification.to_csv(output_dir / "diversification.csv", index=False)
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.path_stress.to_csv(output_dir / "path_stress.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
@@ -139,6 +140,7 @@ def run(
         "regime_metrics.csv",
         "sector_exposure.csv",
         "concentration.csv",
+        "diversification.csv",
         "drawdowns.csv",
         "path_stress.csv",
         "execution_costs.csv",
@@ -167,6 +169,7 @@ def run(
     distribution = result.return_distribution.iloc[0]
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
+    diversification = result.diversification.iloc[0]
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     worst_path_stress = result.path_stress.iloc[0] if not result.path_stress.empty else None
     execution_costs = result.execution_costs.iloc[0]
@@ -235,7 +238,11 @@ def run(
         f"- Largest average sector gross weight: {top_sector.name} "
         f"({top_sector['avg_gross_weight']:.2f})\n"
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"
-        f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n\n"
+        f"- Average top-5 contract gross share: {concentration['avg_top_5_gross_share']:.2%}\n"
+        f"- Gross-vol diversification ratio: "
+        f"{diversification['diversification_ratio']:.2f}x "
+        f"with {diversification['vol_reduction']:.0%} volatility reduction versus "
+        "summed weighted legs\n\n"
         "Walk-forward validation:\n\n"
         f"- Windows evaluated: {walk_forward['windows']:.0f}\n"
         f"- Unique selected parameter sets: {walk_forward['unique_parameter_sets']:.0f}\n"
@@ -325,6 +332,17 @@ def run(
         f"{signal_contribution['avg_abs_carry_component_share']:.0%}\n"
         f"- Trend/carry signal agreement rate: "
         f"{signal_contribution['trend_carry_agreement_rate']:.0%}\n\n"
+        "Diversification diagnostics:\n\n"
+        f"- Portfolio gross volatility: "
+        f"{diversification['ann_portfolio_gross_vol']:.2%}\n"
+        f"- Sum of weighted contract volatilities: "
+        f"{diversification['ann_sum_component_vol']:.2%}\n"
+        f"- Average pairwise weighted-leg correlation: "
+        f"{diversification['avg_pairwise_corr']:.2f}\n"
+        f"- Maximum pairwise weighted-leg correlation: "
+        f"{diversification['max_pairwise_corr']:.2f}\n"
+        f"- Contracts contributing realized risk: "
+        f"{diversification['contracts_with_risk']:.0f}\n\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )
