@@ -94,6 +94,40 @@ def return_distribution_summary(returns: pd.Series) -> pd.DataFrame:
     )
 
 
+def monthly_return_summary(returns: pd.Series) -> pd.DataFrame:
+    columns = [
+        "month",
+        "return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+        "positive_days",
+        "observations",
+    ]
+    clean = returns.dropna()
+    if clean.empty or not isinstance(clean.index, pd.DatetimeIndex):
+        return pd.DataFrame(columns=columns)
+
+    rows = []
+    for month_end, monthly_returns in clean.resample("ME"):
+        if monthly_returns.empty:
+            continue
+        metrics = performance_metrics(monthly_returns)
+        rows.append(
+            {
+                "month": month_end.strftime("%Y-%m"),
+                "return": float((1.0 + monthly_returns).prod() - 1.0),
+                "ann_vol": metrics["ann_vol"],
+                "sharpe": metrics["sharpe"],
+                "max_drawdown": metrics["max_drawdown"],
+                "positive_days": float((monthly_returns > 0.0).mean()),
+                "observations": float(len(monthly_returns)),
+            }
+        )
+
+    return pd.DataFrame(rows, columns=columns)
+
+
 def drawdown_summary(returns: pd.Series, top_n: int = 5) -> pd.DataFrame:
     columns = ["start", "trough", "recovery", "depth", "length_days", "recovery_days"]
     clean = returns.dropna()

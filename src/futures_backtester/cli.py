@@ -106,6 +106,7 @@ def run(
     )
     result.summary.to_csv(output_dir / "summary.csv", index=False)
     result.return_distribution.to_csv(output_dir / "return_distribution.csv", index=False)
+    result.monthly_returns.to_csv(output_dir / "monthly_returns.csv", index=False)
     result.rolling_metrics.to_csv(output_dir / "rolling_metrics.csv")
     result.returns.to_frame().to_csv(output_dir / "daily_returns.csv")
     result.weights.to_csv(output_dir / "weights.csv")
@@ -131,6 +132,7 @@ def run(
         "run_config.csv",
         "summary.csv",
         "return_distribution.csv",
+        "monthly_returns.csv",
         "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
@@ -167,6 +169,7 @@ def run(
 
     summary = result.summary.iloc[0]
     distribution = result.return_distribution.iloc[0]
+    monthly_returns = result.monthly_returns
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
     diversification = result.diversification.iloc[0]
@@ -198,6 +201,13 @@ def run(
         f"with {rolling['max_drawdown']:.2%} max drawdown\n"
         if rolling is not None
         else "- Latest rolling Sharpe: unavailable for this sample length\n"
+    )
+    monthly_line = (
+        f"- Monthly returns: {float((monthly_returns['return'] > 0.0).mean()):.0%} "
+        f"positive months, best {monthly_returns['return'].max():.2%}, "
+        f"worst {monthly_returns['return'].min():.2%}\n"
+        if not monthly_returns.empty
+        else "- Monthly returns: unavailable for this sample length\n"
     )
     path_stress_line = (
         f"- Worst {int(worst_path_stress['horizon_days'])}-day path: "
@@ -234,6 +244,7 @@ def run(
         f"{distribution['worst_day']:.2%}\n"
         f"- Positive months: {distribution['positive_month_rate']:.0%} "
         f"(best {distribution['best_month']:.2%}, worst {distribution['worst_month']:.2%})\n"
+        f"{monthly_line}"
         f"{rolling_line}"
         f"- Largest average sector gross weight: {top_sector.name} "
         f"({top_sector['avg_gross_weight']:.2f})\n"

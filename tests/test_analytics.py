@@ -9,6 +9,7 @@ from futures_backtester.analytics import (
     execution_cost_by_contract,
     execution_cost_summary,
     exposure_change_summary,
+    monthly_return_summary,
     parameter_grid_summary,
     path_stress_summary,
     performance_metrics,
@@ -99,6 +100,47 @@ def test_return_distribution_summary_handles_empty_returns() -> None:
 
     assert summary.shape == (1, 12)
     assert (summary.iloc[0] == 0.0).all()
+
+
+def test_monthly_return_summary_reports_path_metrics_by_month() -> None:
+    returns = pd.Series(
+        [0.01, -0.02, 0.03, 0.02],
+        index=pd.to_datetime(["2024-01-02", "2024-01-03", "2024-02-01", "2024-02-02"]),
+    )
+
+    summary = monthly_return_summary(returns)
+
+    assert list(summary.columns) == [
+        "month",
+        "return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+        "positive_days",
+        "observations",
+    ]
+    assert summary["month"].tolist() == ["2024-01", "2024-02"]
+    assert np.isclose(summary.loc[0, "return"], (1.01 * 0.98) - 1.0)
+    assert np.isclose(summary.loc[1, "return"], (1.03 * 1.02) - 1.0)
+    assert summary.loc[0, "positive_days"] == 0.5
+    assert summary.loc[1, "positive_days"] == 1.0
+    assert summary.loc[0, "observations"] == 2.0
+    assert np.isfinite(summary[["ann_vol", "sharpe", "max_drawdown"]]).all(axis=None)
+
+
+def test_monthly_return_summary_requires_datetime_index() -> None:
+    summary = monthly_return_summary(pd.Series([0.01, -0.02]))
+
+    assert summary.empty
+    assert list(summary.columns) == [
+        "month",
+        "return",
+        "ann_vol",
+        "sharpe",
+        "max_drawdown",
+        "positive_days",
+        "observations",
+    ]
 
 
 def test_rolling_metrics_emit_time_varying_risk_diagnostics() -> None:

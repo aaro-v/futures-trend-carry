@@ -13,6 +13,7 @@ from futures_backtester.backtesting.analytics import (
     execution_cost_by_contract,
     execution_cost_summary,
     exposure_change_summary,
+    monthly_return_summary,
     parameter_grid_summary,
     path_stress_summary,
     performance_metrics,
@@ -61,6 +62,7 @@ class BacktestResult:
     parameter_grid: pd.DataFrame
     summary: pd.DataFrame
     return_distribution: pd.DataFrame
+    monthly_returns: pd.DataFrame
     rolling_metrics: pd.DataFrame
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
@@ -196,6 +198,7 @@ def run_backtest(
         parameter_grid=parameter_grid_frame,
         summary=summary,
         return_distribution=return_distribution_summary(live),
+        monthly_returns=monthly_return_summary(live),
         rolling_metrics=rolling_metrics(
             live,
             window=settings.rolling_window,

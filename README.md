@@ -37,6 +37,7 @@ contracts with volatility targeting and risk parity, applies correlation-based
 portfolio scaling, subtracts roll and execution costs, and writes:
 
 - `reports/generated/summary.csv`
+- `reports/generated/monthly_returns.csv`
 - `reports/generated/rolling_metrics.csv`
 - `reports/generated/daily_returns.csv`
 - `reports/generated/weights.csv`
@@ -110,6 +111,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   resampled tail risk.
 - Rolling out-of-sample risk diagnostics for time-varying annualized return,
   volatility, Sharpe, and drawdown review.
+- Monthly return diagnostics with realized monthly returns, within-month
+  volatility, drawdown, hit rate, and observation counts.
 - Sector exposure summaries to make concentration and diversification review
   reproducible from each generated run.
 - Contract concentration diagnostics, including top-5 gross exposure share,

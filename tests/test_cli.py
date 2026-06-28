@@ -29,6 +29,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "run_config.csv").exists()
     assert (out_dir / "summary.csv").exists()
     assert (out_dir / "return_distribution.csv").exists()
+    assert (out_dir / "monthly_returns.csv").exists()
     assert (out_dir / "rolling_metrics.csv").exists()
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
@@ -61,6 +62,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "run_config.csv",
         "summary.csv",
         "return_distribution.csv",
+        "monthly_returns.csv",
         "rolling_metrics.csv",
         "daily_returns.csv",
         "weights.csv",
@@ -106,6 +108,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     distribution_row = manifest.set_index("artifact").loc["return_distribution.csv"]
     assert distribution_row["rows"] == 1
     assert distribution_row["columns"] == 12
+    monthly_row = manifest.set_index("artifact").loc["monthly_returns.csv"]
+    assert monthly_row["rows"] >= 1
+    assert monthly_row["columns"] == 7
     diversification_row = manifest.set_index("artifact").loc["diversification.csv"]
     assert diversification_row["rows"] == 1
     assert diversification_row["columns"] == 7
@@ -133,6 +138,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Calmar" in report
     assert "Daily hit rate" in report
     assert "Positive months" in report
+    assert "Monthly returns" in report
     assert "rolling Sharpe" in report
     assert "Gross-vol diversification ratio" in report
     assert "Walk-forward validation" in report
