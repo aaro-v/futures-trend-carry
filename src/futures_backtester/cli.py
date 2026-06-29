@@ -117,6 +117,7 @@ def run(
     result.sector_exposure.to_csv(output_dir / "sector_exposure.csv")
     result.concentration.to_csv(output_dir / "concentration.csv", index=False)
     result.diversification.to_csv(output_dir / "diversification.csv", index=False)
+    result.correlation_pairs.to_csv(output_dir / "correlation_pairs.csv", index=False)
     result.drawdowns.to_csv(output_dir / "drawdowns.csv", index=False)
     result.path_stress.to_csv(output_dir / "path_stress.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
@@ -143,6 +144,7 @@ def run(
         "sector_exposure.csv",
         "concentration.csv",
         "diversification.csv",
+        "correlation_pairs.csv",
         "drawdowns.csv",
         "path_stress.csv",
         "execution_costs.csv",
@@ -173,6 +175,9 @@ def run(
     top_sector = result.sector_exposure.iloc[0]
     concentration = result.concentration.iloc[0]
     diversification = result.diversification.iloc[0]
+    top_correlation_pair = (
+        result.correlation_pairs.iloc[0] if not result.correlation_pairs.empty else None
+    )
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     worst_path_stress = result.path_stress.iloc[0] if not result.path_stress.empty else None
     execution_costs = result.execution_costs.iloc[0]
@@ -223,6 +228,14 @@ def run(
         f"{top_contract_cost['annualized_turnover']:.1f}x turnover)\n"
         if top_contract_cost is not None
         else "- Highest annualized contract cost: unavailable\n"
+    )
+    correlation_pair_line = (
+        f"- Largest weighted-leg covariance pair: {top_correlation_pair['contract_a']} / "
+        f"{top_correlation_pair['contract_b']} "
+        f"(correlation {top_correlation_pair['correlation']:.2f}, "
+        f"annualized covariance {top_correlation_pair['ann_covariance']:.4f})\n"
+        if top_correlation_pair is not None
+        else "- Largest weighted-leg covariance pair: unavailable\n"
     )
     report = (
         "# Research Report\n\n"
@@ -354,6 +367,8 @@ def run(
         f"{diversification['max_pairwise_corr']:.2f}\n"
         f"- Contracts contributing realized risk: "
         f"{diversification['contracts_with_risk']:.0f}\n\n"
+        "Correlation pair diagnostics:\n\n"
+        f"{correlation_pair_line}\n"
         "Outputs are generated from deterministic synthetic data and are intended "
         "for engineering review, not live-market performance claims.\n"
     )

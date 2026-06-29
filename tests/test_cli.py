@@ -38,6 +38,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "sector_exposure.csv").exists()
     assert (out_dir / "concentration.csv").exists()
     assert (out_dir / "diversification.csv").exists()
+    assert (out_dir / "correlation_pairs.csv").exists()
     assert (out_dir / "drawdowns.csv").exists()
     assert (out_dir / "path_stress.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
@@ -70,6 +71,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "parameter_grid.csv",
         "parameter_grid_summary.csv",
         "diversification.csv",
+        "correlation_pairs.csv",
         "path_stress.csv",
         "execution_costs_by_contract.csv",
         "rebalance.csv",
@@ -114,6 +116,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     diversification_row = manifest.set_index("artifact").loc["diversification.csv"]
     assert diversification_row["rows"] == 1
     assert diversification_row["columns"] == 7
+    correlation_pair_row = manifest.set_index("artifact").loc["correlation_pairs.csv"]
+    assert correlation_pair_row["rows"] >= 1
+    assert correlation_pair_row["columns"] == 8
     rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
     assert rolling_row["rows"] >= 1
     assert rolling_row["columns"] == 7
@@ -162,3 +167,5 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Signal contribution diagnostics" in report
     assert "Trend-attributed gross return" in report
     assert "Diversification diagnostics" in report
+    assert "Correlation pair diagnostics" in report
+    assert "Largest weighted-leg covariance pair" in report

@@ -47,6 +47,7 @@ portfolio scaling, subtracts roll and execution costs, and writes:
 - `reports/generated/sector_exposure.csv`
 - `reports/generated/concentration.csv`
 - `reports/generated/diversification.csv`
+- `reports/generated/correlation_pairs.csv`
 - `reports/generated/drawdowns.csv`
 - `reports/generated/path_stress.csv`
 - `reports/generated/execution_costs.csv`
@@ -119,6 +120,8 @@ futures-backtest sample-data --output data/cache/sample_futures.parquet
   HHI, and effective contract count.
 - Diversification diagnostics comparing realized gross portfolio volatility
   with standalone weighted contract-leg volatility and pairwise correlations.
+- Correlation pair diagnostics ranking weighted contract pairs by realized
+  annualized covariance.
 - Drawdown episode diagnostics covering depth, length, trough, and recovery.
 - Path stress diagnostics ranking the worst rolling return windows across
   multiple review horizons.

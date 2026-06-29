@@ -381,6 +381,70 @@ def diversification_summary(weights: pd.DataFrame, returns: pd.DataFrame) -> pd.
     )
 
 
+def correlation_pair_summary(
+    weights: pd.DataFrame,
+    returns: pd.DataFrame,
+    top_n: int = 10,
+) -> pd.DataFrame:
+    columns = [
+        "contract_a",
+        "contract_b",
+        "correlation",
+        "ann_covariance",
+        "abs_ann_covariance",
+        "avg_abs_weight_a",
+        "avg_abs_weight_b",
+        "combined_avg_abs_weight",
+    ]
+    if weights.empty or top_n <= 0:
+        return pd.DataFrame(columns=columns)
+
+    aligned_returns = returns.reindex(index=weights.index, columns=weights.columns).fillna(0.0)
+    prior_weights = weights.shift(1).fillna(0.0)
+    weighted_leg_returns = prior_weights * aligned_returns
+    component_vol = weighted_leg_returns.std(ddof=0)
+    active_contracts = component_vol[component_vol > 0.0].index
+    if len(active_contracts) < 2:
+        return pd.DataFrame(columns=columns)
+
+    active_returns = weighted_leg_returns[active_contracts]
+    corr = active_returns.corr()
+    cov = active_returns.cov(ddof=0) * 252
+    avg_abs_weight = prior_weights[active_contracts].abs().mean()
+
+    rows = []
+    contracts = list(active_contracts)
+    for left_position, contract_a in enumerate(contracts[:-1]):
+        for contract_b in contracts[left_position + 1 :]:
+            ann_covariance = float(cov.loc[contract_a, contract_b])
+            rows.append(
+                {
+                    "contract_a": contract_a,
+                    "contract_b": contract_b,
+                    "correlation": float(corr.loc[contract_a, contract_b]),
+                    "ann_covariance": ann_covariance,
+                    "abs_ann_covariance": abs(ann_covariance),
+                    "avg_abs_weight_a": float(avg_abs_weight.loc[contract_a]),
+                    "avg_abs_weight_b": float(avg_abs_weight.loc[contract_b]),
+                    "combined_avg_abs_weight": float(
+                        avg_abs_weight.loc[contract_a] + avg_abs_weight.loc[contract_b]
+                    ),
+                }
+            )
+
+    if not rows:
+        return pd.DataFrame(columns=columns)
+    return (
+        pd.DataFrame(rows, columns=columns)
+        .sort_values(
+            ["abs_ann_covariance", "correlation", "combined_avg_abs_weight"],
+            ascending=[False, False, False],
+        )
+        .head(top_n)
+        .reset_index(drop=True)
+    )
+
+
 def execution_cost_summary(
     weights: pd.DataFrame,
     roll_cost_bps: pd.DataFrame,

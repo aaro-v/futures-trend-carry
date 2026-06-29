@@ -4,6 +4,7 @@ import pandas as pd
 from futures_backtester.analytics import (
     bootstrap_reliability_summary,
     concentration_summary,
+    correlation_pair_summary,
     diversification_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -311,6 +312,57 @@ def test_diversification_summary_handles_empty_and_zero_risk_inputs() -> None:
     assert zero_risk.shape == (1, 7)
     assert (empty.iloc[0] == 0.0).all()
     assert (zero_risk.iloc[0] == 0.0).all()
+
+
+def test_correlation_pair_summary_ranks_weighted_leg_covariance_pairs() -> None:
+    weights = pd.DataFrame(
+        {
+            "ES": [1.0, 1.0, 1.0, 1.0, 1.0],
+            "NQ": [1.0, 1.0, 1.0, 1.0, 1.0],
+            "TY": [0.5, 0.5, 0.5, 0.5, 0.5],
+        }
+    )
+    returns = pd.DataFrame(
+        {
+            "ES": [0.00, 0.01, -0.01, 0.02, -0.02],
+            "NQ": [0.00, 0.01, -0.01, 0.02, -0.02],
+            "TY": [0.00, -0.01, 0.01, -0.02, 0.02],
+        }
+    )
+
+    summary = correlation_pair_summary(weights, returns, top_n=2)
+
+    assert list(summary.columns) == [
+        "contract_a",
+        "contract_b",
+        "correlation",
+        "ann_covariance",
+        "abs_ann_covariance",
+        "avg_abs_weight_a",
+        "avg_abs_weight_b",
+        "combined_avg_abs_weight",
+    ]
+    assert len(summary) == 2
+    assert summary.loc[0, "contract_a"] == "ES"
+    assert summary.loc[0, "contract_b"] == "NQ"
+    assert summary.loc[0, "correlation"] > 0.99
+    assert summary.loc[0, "ann_covariance"] > 0.0
+    assert summary.loc[0, "abs_ann_covariance"] >= summary.loc[1, "abs_ann_covariance"]
+    assert summary.loc[0, "avg_abs_weight_a"] == 0.8
+    assert summary.loc[0, "avg_abs_weight_b"] == 0.8
+    assert summary.loc[0, "combined_avg_abs_weight"] == 1.6
+
+
+def test_correlation_pair_summary_handles_empty_or_single_risk_inputs() -> None:
+    empty = correlation_pair_summary(pd.DataFrame(), pd.DataFrame())
+    single_risk = correlation_pair_summary(
+        pd.DataFrame({"ES": [1.0, 1.0], "TY": [0.0, 0.0]}),
+        pd.DataFrame({"ES": [0.01, -0.01], "TY": [-0.01, 0.01]}),
+    )
+
+    assert empty.empty
+    assert single_risk.empty
+    assert list(empty.columns) == list(single_risk.columns)
 
 
 def test_execution_cost_summary_separates_roll_and_trade_costs() -> None:
