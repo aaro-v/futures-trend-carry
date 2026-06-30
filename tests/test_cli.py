@@ -43,6 +43,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "path_stress.csv").exists()
     assert (out_dir / "execution_costs.csv").exists()
     assert (out_dir / "execution_costs_by_contract.csv").exists()
+    assert (out_dir / "cost_drag_by_return_state.csv").exists()
     assert (out_dir / "rebalance.csv").exists()
     assert (out_dir / "exposure_changes.csv").exists()
     assert (out_dir / "signal_contribution.csv").exists()
@@ -74,6 +75,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "correlation_pairs.csv",
         "path_stress.csv",
         "execution_costs_by_contract.csv",
+        "cost_drag_by_return_state.csv",
         "rebalance.csv",
         "exposure_changes.csv",
         "signal_contribution.csv",
@@ -119,6 +121,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     correlation_pair_row = manifest.set_index("artifact").loc["correlation_pairs.csv"]
     assert correlation_pair_row["rows"] >= 1
     assert correlation_pair_row["columns"] == 8
+    cost_drag_row = manifest.set_index("artifact").loc["cost_drag_by_return_state.csv"]
+    assert cost_drag_row["rows"] >= 1
+    assert cost_drag_row["columns"] == 7
     rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
     assert rolling_row["rows"] >= 1
     assert rolling_row["columns"] == 7
@@ -160,6 +165,8 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Positive Sharpe probability" in report
     assert "Contract cost diagnostics" in report
     assert "Highest annualized contract cost" in report
+    assert "Cost drag by return state" in report
+    assert "Negative-return day annualized cost drag" in report
     assert "Rebalance diagnostics" in report
     assert "Average rebalance turnover" in report
     assert "Exposure change diagnostics" in report

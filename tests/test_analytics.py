@@ -5,6 +5,7 @@ from futures_backtester.analytics import (
     bootstrap_reliability_summary,
     concentration_summary,
     correlation_pair_summary,
+    cost_drag_by_return_state,
     diversification_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -450,6 +451,70 @@ def test_execution_cost_by_contract_reconciles_to_portfolio_costs() -> None:
     )
     assert np.isclose(by_contract["ann_trade_cost"].sum(), portfolio.loc[0, "ann_trade_cost"])
     assert np.isclose(by_contract["ann_total_cost"].sum(), portfolio.loc[0, "ann_total_cost"])
+
+
+def test_cost_drag_by_return_state_buckets_costs_by_net_return_sign() -> None:
+    returns = pd.Series([0.01, -0.02, 0.0], index=pd.date_range("2024-01-01", periods=3))
+    weights = pd.DataFrame(
+        {
+            "ES": [0.0, 0.5, 0.25],
+            "TY": [0.0, -0.5, -0.25],
+        },
+        index=returns.index,
+    )
+    roll_cost_bps = pd.DataFrame(
+        {
+            "ES": [1.0, 1.0, 1.0],
+            "TY": [2.0, 2.0, 2.0],
+        },
+        index=returns.index,
+    )
+    commission_bps = pd.Series({"ES": 0.5, "TY": 0.5})
+
+    summary = cost_drag_by_return_state(
+        returns,
+        weights,
+        roll_cost_bps,
+        commission_bps,
+        slippage_bps=1.0,
+    )
+    by_state = summary.set_index("return_state")
+
+    assert list(summary.columns) == [
+        "return_state",
+        "observations",
+        "observation_rate",
+        "avg_net_return",
+        "avg_daily_cost",
+        "ann_total_cost",
+        "cost_to_abs_return",
+    ]
+    assert summary["return_state"].tolist() == ["positive", "negative", "flat"]
+    assert by_state.loc["positive", "observation_rate"] == 1 / 3
+    assert by_state.loc["negative", "avg_net_return"] == -0.02
+    assert by_state.loc["negative", "ann_total_cost"] > 0.0
+    assert by_state.loc["flat", "cost_to_abs_return"] == 0.0
+
+
+def test_cost_drag_by_return_state_handles_empty_inputs() -> None:
+    summary = cost_drag_by_return_state(
+        pd.Series(dtype=float),
+        pd.DataFrame(),
+        pd.DataFrame(),
+        pd.Series(dtype=float),
+        slippage_bps=1.0,
+    )
+
+    assert summary.empty
+    assert list(summary.columns) == [
+        "return_state",
+        "observations",
+        "observation_rate",
+        "avg_net_return",
+        "avg_daily_cost",
+        "ann_total_cost",
+        "cost_to_abs_return",
+    ]
 
 
 def test_rebalance_summary_measures_turnover_frequency_and_size() -> None:

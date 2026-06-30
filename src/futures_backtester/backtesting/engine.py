@@ -9,6 +9,7 @@ from futures_backtester.backtesting.analytics import (
     bootstrap_reliability_summary,
     concentration_summary,
     correlation_pair_summary,
+    cost_drag_by_return_state,
     diversification_summary,
     drawdown_summary,
     execution_cost_by_contract,
@@ -74,6 +75,7 @@ class BacktestResult:
     path_stress: pd.DataFrame
     execution_costs: pd.DataFrame
     execution_costs_by_contract: pd.DataFrame
+    cost_drag_by_return_state: pd.DataFrame
     rebalance: pd.DataFrame
     exposure_changes: pd.DataFrame
     signal_contribution: pd.DataFrame
@@ -226,6 +228,13 @@ def run_backtest(
             settings.slippage_bps,
         ),
         execution_costs_by_contract=execution_cost_by_contract(
+            stitched_weights.loc[live.index],
+            panel.roll_cost_bps,
+            panel.commission_bps,
+            settings.slippage_bps,
+        ),
+        cost_drag_by_return_state=cost_drag_by_return_state(
+            live,
             stitched_weights.loc[live.index],
             panel.roll_cost_bps,
             panel.commission_bps,

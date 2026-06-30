@@ -535,6 +535,70 @@ def execution_cost_by_contract(
     return summary[columns].sort_values("ann_total_cost", ascending=False).rename_axis("contract")
 
 
+def cost_drag_by_return_state(
+    returns: pd.Series,
+    weights: pd.DataFrame,
+    roll_cost_bps: pd.DataFrame,
+    commission_bps: pd.Series,
+    slippage_bps: float,
+) -> pd.DataFrame:
+    columns = [
+        "return_state",
+        "observations",
+        "observation_rate",
+        "avg_net_return",
+        "avg_daily_cost",
+        "ann_total_cost",
+        "cost_to_abs_return",
+    ]
+    clean_returns = returns.dropna()
+    if clean_returns.empty or weights.empty:
+        return pd.DataFrame(columns=columns)
+
+    aligned_weights = weights.reindex(clean_returns.index).fillna(0.0)
+    aligned_roll_costs = roll_cost_bps.reindex(
+        index=clean_returns.index,
+        columns=aligned_weights.columns,
+    ).fillna(0.0)
+    aligned_commissions = commission_bps.reindex(aligned_weights.columns).fillna(0.0)
+
+    prior_weights = aligned_weights.shift(1).fillna(0.0)
+    turnover = aligned_weights.diff().abs()
+    turnover.iloc[0] = aligned_weights.iloc[0].abs()
+
+    roll_cost = (prior_weights.abs() * aligned_roll_costs / 10_000.0).sum(axis=1)
+    commission_cost = turnover.mul(aligned_commissions, axis=1).sum(axis=1) / 10_000.0
+    slippage_cost = turnover.sum(axis=1) * slippage_bps / 10_000.0
+    total_cost = roll_cost + commission_cost + slippage_cost
+
+    states = pd.Series("flat", index=clean_returns.index)
+    states[clean_returns > 0.0] = "positive"
+    states[clean_returns < 0.0] = "negative"
+
+    rows = []
+    for state in ["positive", "negative", "flat"]:
+        mask = states == state
+        state_returns = clean_returns[mask]
+        if state_returns.empty:
+            continue
+        state_cost = total_cost[mask]
+        abs_return = float(state_returns.abs().mean())
+        avg_daily_cost = float(state_cost.mean())
+        rows.append(
+            {
+                "return_state": state,
+                "observations": float(len(state_returns)),
+                "observation_rate": float(len(state_returns) / len(clean_returns)),
+                "avg_net_return": float(state_returns.mean()),
+                "avg_daily_cost": avg_daily_cost,
+                "ann_total_cost": avg_daily_cost * 252,
+                "cost_to_abs_return": avg_daily_cost / abs_return if abs_return > 0.0 else 0.0,
+            }
+        )
+
+    return pd.DataFrame(rows, columns=columns)
+
+
 def rebalance_summary(weights: pd.DataFrame, threshold: float = 1e-12) -> pd.DataFrame:
     columns = [
         "observations",

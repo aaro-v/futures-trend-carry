@@ -122,6 +122,10 @@ def run(
     result.path_stress.to_csv(output_dir / "path_stress.csv", index=False)
     result.execution_costs.to_csv(output_dir / "execution_costs.csv", index=False)
     result.execution_costs_by_contract.to_csv(output_dir / "execution_costs_by_contract.csv")
+    result.cost_drag_by_return_state.to_csv(
+        output_dir / "cost_drag_by_return_state.csv",
+        index=False,
+    )
     result.rebalance.to_csv(output_dir / "rebalance.csv", index=False)
     result.exposure_changes.to_csv(output_dir / "exposure_changes.csv", index=False)
     result.signal_contribution.to_csv(output_dir / "signal_contribution.csv", index=False)
@@ -149,6 +153,7 @@ def run(
         "path_stress.csv",
         "execution_costs.csv",
         "execution_costs_by_contract.csv",
+        "cost_drag_by_return_state.csv",
         "rebalance.csv",
         "exposure_changes.csv",
         "signal_contribution.csv",
@@ -181,6 +186,7 @@ def run(
     worst_drawdown = result.drawdowns.iloc[0] if not result.drawdowns.empty else None
     worst_path_stress = result.path_stress.iloc[0] if not result.path_stress.empty else None
     execution_costs = result.execution_costs.iloc[0]
+    cost_drag_by_state = result.cost_drag_by_return_state.set_index("return_state")
     rebalance = result.rebalance.iloc[0]
     exposure_changes = result.exposure_changes.iloc[0]
     top_contract_cost = (
@@ -228,6 +234,21 @@ def run(
         f"{top_contract_cost['annualized_turnover']:.1f}x turnover)\n"
         if top_contract_cost is not None
         else "- Highest annualized contract cost: unavailable\n"
+    )
+    negative_cost_drag_line = (
+        f"- Negative-return day annualized cost drag: "
+        f"{cost_drag_by_state.loc['negative', 'ann_total_cost']:.2%} "
+        f"across {cost_drag_by_state.loc['negative', 'observation_rate']:.0%} of days\n"
+        if "negative" in cost_drag_by_state.index
+        else "- Negative-return day annualized cost drag: unavailable\n"
+    )
+    positive_cost_drag_line = (
+        f"- Positive-return day annualized cost drag: "
+        f"{cost_drag_by_state.loc['positive', 'ann_total_cost']:.2%} "
+        f"with {cost_drag_by_state.loc['positive', 'cost_to_abs_return']:.0%} "
+        "cost-to-absolute-return ratio\n"
+        if "positive" in cost_drag_by_state.index
+        else "- Positive-return day annualized cost drag: unavailable\n"
     )
     correlation_pair_line = (
         f"- Largest weighted-leg covariance pair: {top_correlation_pair['contract_a']} / "
@@ -321,6 +342,9 @@ def run(
         f"- Annualized roll cost: {execution_costs['ann_roll_cost']:.2%}\n"
         f"- Annualized trade cost: {execution_costs['ann_trade_cost']:.2%}\n"
         f"- Annualized total cost: {execution_costs['ann_total_cost']:.2%}\n\n"
+        "Cost drag by return state:\n\n"
+        f"{negative_cost_drag_line}"
+        f"{positive_cost_drag_line}\n"
         "Rebalance diagnostics:\n\n"
         f"- Rebalance days: {rebalance['rebalance_days']:.0f} "
         f"({rebalance['rebalance_day_rate']:.0%} of evaluated days)\n"
