@@ -20,6 +20,7 @@ from futures_backtester.analytics import (
     rolling_metrics,
     selection_quality_summary,
     signal_contribution_summary,
+    vol_target_diagnostics,
     walk_forward_summary,
 )
 
@@ -168,6 +169,59 @@ def test_rolling_metrics_emit_time_varying_risk_diagnostics() -> None:
     expected_last = performance_metrics(returns.iloc[-3:])
     assert summary.loc[returns.index[-1], "sharpe"] == expected_last["sharpe"]
     assert summary.loc[returns.index[-1], "max_drawdown"] == expected_last["max_drawdown"]
+
+
+def test_vol_target_diagnostics_measure_realized_tracking() -> None:
+    returns = pd.Series(
+        [0.01, -0.01, 0.012, -0.008, 0.006],
+        index=pd.date_range("2024-01-01", periods=5),
+    )
+
+    summary = vol_target_diagnostics(
+        returns,
+        target_vol=0.12,
+        window=3,
+        min_periods=2,
+        tolerance=0.5,
+    )
+
+    assert list(summary.columns) == [
+        "target_vol",
+        "window_days",
+        "observations",
+        "avg_realized_vol",
+        "median_realized_vol",
+        "latest_realized_vol",
+        "min_realized_vol",
+        "max_realized_vol",
+        "avg_vol_gap",
+        "avg_abs_vol_gap",
+        "pct_days_within_tolerance",
+        "pct_days_above_target",
+        "pct_days_below_target",
+    ]
+    assert summary.loc[0, "target_vol"] == 0.12
+    assert summary.loc[0, "window_days"] == 3.0
+    assert summary.loc[0, "observations"] == 4.0
+    assert summary.loc[0, "avg_realized_vol"] > 0.0
+    assert summary.loc[0, "avg_abs_vol_gap"] >= abs(summary.loc[0, "avg_vol_gap"])
+    assert 0.0 <= summary.loc[0, "pct_days_within_tolerance"] <= 1.0
+    assert np.isclose(
+        summary.loc[0, "pct_days_above_target"] + summary.loc[0, "pct_days_below_target"],
+        1.0,
+    )
+
+
+def test_vol_target_diagnostics_handles_empty_or_unmeasured_inputs() -> None:
+    empty = vol_target_diagnostics(pd.Series(dtype=float), target_vol=0.12)
+    short = vol_target_diagnostics(pd.Series([0.01]), target_vol=0.12, min_periods=2)
+
+    assert empty.shape == (1, 13)
+    assert short.shape == (1, 13)
+    assert (empty.iloc[0] == 0.0).all()
+    assert short.loc[0, "target_vol"] == 0.12
+    assert short.loc[0, "window_days"] == 63.0
+    assert short.loc[0, "observations"] == 0.0
 
 
 def test_drawdown_summary_ranks_recovered_episodes_by_depth() -> None:

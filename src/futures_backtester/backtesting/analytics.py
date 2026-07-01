@@ -292,6 +292,80 @@ def rolling_metrics(
     return pd.DataFrame(rows).set_index("end_date")[columns]
 
 
+def vol_target_diagnostics(
+    returns: pd.Series,
+    target_vol: float,
+    window: int = 63,
+    min_periods: int = 21,
+    tolerance: float = 0.25,
+) -> pd.DataFrame:
+    columns = [
+        "target_vol",
+        "window_days",
+        "observations",
+        "avg_realized_vol",
+        "median_realized_vol",
+        "latest_realized_vol",
+        "min_realized_vol",
+        "max_realized_vol",
+        "avg_vol_gap",
+        "avg_abs_vol_gap",
+        "pct_days_within_tolerance",
+        "pct_days_above_target",
+        "pct_days_below_target",
+    ]
+    clean = returns.dropna()
+    if clean.empty or target_vol <= 0.0 or window <= 0 or min_periods <= 0:
+        return pd.DataFrame([dict.fromkeys(columns, 0.0)], columns=columns)
+
+    realized_vol = clean.rolling(window, min_periods=min_periods).std(ddof=0) * np.sqrt(252)
+    realized_vol = realized_vol.dropna()
+    if realized_vol.empty:
+        return pd.DataFrame(
+            [
+                {
+                    "target_vol": float(target_vol),
+                    "window_days": float(window),
+                    "observations": 0.0,
+                    "avg_realized_vol": 0.0,
+                    "median_realized_vol": 0.0,
+                    "latest_realized_vol": 0.0,
+                    "min_realized_vol": 0.0,
+                    "max_realized_vol": 0.0,
+                    "avg_vol_gap": 0.0,
+                    "avg_abs_vol_gap": 0.0,
+                    "pct_days_within_tolerance": 0.0,
+                    "pct_days_above_target": 0.0,
+                    "pct_days_below_target": 0.0,
+                }
+            ],
+            columns=columns,
+        )
+
+    vol_gap = realized_vol - target_vol
+    tolerance_band = target_vol * tolerance
+    return pd.DataFrame(
+        [
+            {
+                "target_vol": float(target_vol),
+                "window_days": float(window),
+                "observations": float(len(realized_vol)),
+                "avg_realized_vol": float(realized_vol.mean()),
+                "median_realized_vol": float(realized_vol.median()),
+                "latest_realized_vol": float(realized_vol.iloc[-1]),
+                "min_realized_vol": float(realized_vol.min()),
+                "max_realized_vol": float(realized_vol.max()),
+                "avg_vol_gap": float(vol_gap.mean()),
+                "avg_abs_vol_gap": float(vol_gap.abs().mean()),
+                "pct_days_within_tolerance": float((vol_gap.abs() <= tolerance_band).mean()),
+                "pct_days_above_target": float((realized_vol > target_vol).mean()),
+                "pct_days_below_target": float((realized_vol < target_vol).mean()),
+            }
+        ],
+        columns=columns,
+    )
+
+
 def sector_exposure_summary(weights: pd.DataFrame, sectors: pd.Series) -> pd.DataFrame:
     sector_map = sectors.reindex(weights.columns).fillna("unknown")
     gross_by_sector = weights.abs().T.groupby(sector_map).sum().T

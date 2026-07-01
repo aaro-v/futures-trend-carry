@@ -17,6 +17,7 @@ from futures_backtester.backtesting.analytics import (
     sector_exposure_summary,
     selection_quality_summary,
     signal_contribution_summary,
+    vol_target_diagnostics,
     walk_forward_summary,
 )
 from futures_backtester.backtesting.engine import BacktestResult, BacktestSettings, run_backtest
@@ -43,5 +44,6 @@ __all__ = [
     "sector_exposure_summary",
     "selection_quality_summary",
     "signal_contribution_summary",
+    "vol_target_diagnostics",
     "walk_forward_summary",
 ]

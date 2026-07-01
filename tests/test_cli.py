@@ -31,6 +31,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert (out_dir / "return_distribution.csv").exists()
     assert (out_dir / "monthly_returns.csv").exists()
     assert (out_dir / "rolling_metrics.csv").exists()
+    assert (out_dir / "vol_target_diagnostics.csv").exists()
     assert (out_dir / "daily_returns.csv").exists()
     assert (out_dir / "weights.csv").exists()
     assert (out_dir / "parameter_grid.csv").exists()
@@ -66,6 +67,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
         "return_distribution.csv",
         "monthly_returns.csv",
         "rolling_metrics.csv",
+        "vol_target_diagnostics.csv",
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
@@ -127,6 +129,9 @@ def test_cli_generates_outputs(tmp_path) -> None:
     rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
     assert rolling_row["rows"] >= 1
     assert rolling_row["columns"] == 7
+    vol_target_row = manifest.set_index("artifact").loc["vol_target_diagnostics.csv"]
+    assert vol_target_row["rows"] == 1
+    assert vol_target_row["columns"] == 13
     image_row = manifest.set_index("artifact").loc["equity_curve.png"]
     assert pd.isna(image_row["rows"])
     selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
@@ -150,6 +155,7 @@ def test_cli_generates_outputs(tmp_path) -> None:
     assert "Positive months" in report
     assert "Monthly returns" in report
     assert "rolling Sharpe" in report
+    assert "Realized volatility target diagnostic" in report
     assert "Gross-vol diversification ratio" in report
     assert "Walk-forward validation" in report
     assert "Parameter switch rate" in report

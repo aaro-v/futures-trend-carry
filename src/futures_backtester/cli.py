@@ -108,6 +108,7 @@ def run(
     result.return_distribution.to_csv(output_dir / "return_distribution.csv", index=False)
     result.monthly_returns.to_csv(output_dir / "monthly_returns.csv", index=False)
     result.rolling_metrics.to_csv(output_dir / "rolling_metrics.csv")
+    result.vol_target_diagnostics.to_csv(output_dir / "vol_target_diagnostics.csv", index=False)
     result.returns.to_frame().to_csv(output_dir / "daily_returns.csv")
     result.weights.to_csv(output_dir / "weights.csv")
     result.selections.to_csv(output_dir / "walk_forward_selections.csv", index=False)
@@ -139,6 +140,7 @@ def run(
         "return_distribution.csv",
         "monthly_returns.csv",
         "rolling_metrics.csv",
+        "vol_target_diagnostics.csv",
         "daily_returns.csv",
         "weights.csv",
         "walk_forward_selections.csv",
@@ -199,6 +201,7 @@ def run(
     selection_quality = result.selection_quality.iloc[0]
     best_grid = result.parameter_grid_summary.iloc[0]
     bootstrap_reliability = result.bootstrap_reliability.iloc[0]
+    vol_target = result.vol_target_diagnostics.iloc[0]
     rolling = result.rolling_metrics.iloc[-1] if not result.rolling_metrics.empty else None
     drawdown_line = (
         f"- Worst drawdown episode: {worst_drawdown['depth']:.2%} "
@@ -280,6 +283,11 @@ def run(
         f"(best {distribution['best_month']:.2%}, worst {distribution['worst_month']:.2%})\n"
         f"{monthly_line}"
         f"{rolling_line}"
+        f"- Realized volatility target diagnostic: "
+        f"{vol_target['avg_realized_vol']:.2%} average "
+        f"{vol_target['window_days']:.0f}-day realized volatility versus "
+        f"{vol_target['target_vol']:.0%} target, "
+        f"{vol_target['pct_days_within_tolerance']:.0%} of measured days within tolerance\n"
         f"- Largest average sector gross weight: {top_sector.name} "
         f"({top_sector['avg_gross_weight']:.2f})\n"
         f"- Effective contract count: {concentration['effective_contract_count']:.1f}\n"

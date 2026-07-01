@@ -26,6 +26,7 @@ from futures_backtester.backtesting.analytics import (
     sector_exposure_summary,
     selection_quality_summary,
     signal_contribution_summary,
+    vol_target_diagnostics,
     walk_forward_summary,
 )
 from futures_backtester.data import FuturesPanel, make_sample_panel
@@ -66,6 +67,7 @@ class BacktestResult:
     return_distribution: pd.DataFrame
     monthly_returns: pd.DataFrame
     rolling_metrics: pd.DataFrame
+    vol_target_diagnostics: pd.DataFrame
     regime_metrics: pd.DataFrame
     sector_exposure: pd.DataFrame
     concentration: pd.DataFrame
@@ -207,6 +209,11 @@ def run_backtest(
             live,
             window=settings.rolling_window,
             min_periods=settings.rolling_min_periods,
+        ),
+        vol_target_diagnostics=vol_target_diagnostics(
+            live,
+            target_vol=settings.target_vol,
+            window=settings.rolling_min_periods,
         ),
         regime_metrics=regime_metrics(live, panel.prices),
         sector_exposure=sector_exposure_summary(stitched_weights.loc[live.index], panel.sectors),
