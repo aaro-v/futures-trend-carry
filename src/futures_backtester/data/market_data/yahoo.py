@@ -1,12 +1,12 @@
 """Daily price history from Yahoo Finance's public chart endpoint.
 
-Conventions of the returned frame (verified against EIA settlements for CL=F):
+The builder interprets the returned fields as follows:
 
 * ``open/high/low/close`` are split-adjusted but NOT dividend-adjusted.
 * ``adj_close`` is split- and dividend-adjusted (total-return price).
 * ``volume`` is split-adjusted.
-* For futures (``XX=F``) the series is the front contract held until expiry,
-  unadjusted for rolls; closes are exchange settlement prices.
+* For futures (``XX=F``) the series is treated as the front contract held until
+  expiry, unadjusted for rolls; ``close`` is the vendor's closing price.
 """
 
 from __future__ import annotations

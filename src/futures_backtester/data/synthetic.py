@@ -1,4 +1,4 @@
-"""A futures-like simulation with fixed, modest trend and carry premia."""
+"""Synthetic futures returns with sector correlation and persistent drift."""
 
 from __future__ import annotations
 

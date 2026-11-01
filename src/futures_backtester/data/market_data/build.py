@@ -1,11 +1,11 @@
 """Real-data futures panel for the trend and carry backtester.
 
-Prices   Yahoo Finance front-month continuous series (``XX=F``): exchange
-         settlements of the front contract, held until its last trading day.
+Prices   Yahoo Finance front-month continuous series (``XX=F``), treated as
+         the front contract held until its last trading day.
 Rolls    Last trading days come from exchange rules (``expiry.py``) evaluated on
          a calendar pooled across contracts. The price jump at each roll is
          removed in one of three ways, chosen per contract in contracts.csv:
-           eia_curve      exact, from EIA contract 1 and 2 settlements, rolling
+           eia_curve      reconstructed from EIA contract 1 and 2 settlements, rolling
                           five trading days before expiry; EIA stopped publishing
                           futures prices on 2024-04-05, after which the
                           drop_roll_day method is used

@@ -37,8 +37,8 @@ def load_panel_frames(
         return long.pivot(index="date", columns="contract", values=column).sort_index()
 
     prices = wide("price")
-    # Carry prices over exchange holidays inside each contract's life (zero return),
-    # but leave the period before a contract starts trading empty.
+    # Fill at most five missing sessions from known past prices, leaving the
+    # period before a contract starts empty.
     prices = prices.ffill(limit=5)
     names = list(prices.columns)
     return {

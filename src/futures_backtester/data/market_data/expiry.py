@@ -1,10 +1,9 @@
 """Last-trading-day rules for the futures in ``contracts.csv``.
 
 Rules follow the exchange contract specifications (CME Group / ICE US) and are
-evaluated on the contract's own observed trading calendar, so exchange holidays
-are respected automatically. Yahoo's ``XX=F`` series holds the front contract
-until this day and switches to the next listed contract on the following
-session (verified against EIA settlements for CL).
+evaluated on the supplied trading calendar. The builder pools observed sessions
+across contracts. It assumes that Yahoo's ``XX=F`` series holds the front
+contract until expiry and switches on the following session.
 """
 
 from __future__ import annotations

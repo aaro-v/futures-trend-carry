@@ -40,7 +40,7 @@ def eia_daily(code: str, area: str = "pet") -> pd.Series:
 
 
 def lagged_monthly(series: pd.Series, lag_months: int = 1) -> pd.Series:
-    """Shift a monthly series so each value is only used after it would have been published."""
+    """Shift monthly observations by an assumed publication lag."""
 
     shifted = series.copy()
     shifted.index = shifted.index + pd.DateOffset(months=lag_months)
