@@ -1,0 +1,89 @@
+{
+  "data_source": "file_panel",
+  "data_dir": "data/real",
+  "input_sha256": {
+    "panel.parquet": "c4dabdcd4b592e3ce02ecfc844b607d3c574badd025e88581b3fc77a1f69cfe1",
+    "contracts_resolved.csv": "77d13cb695f3dd0700a6e621ee3646ad3a82ca9b5b77eb588471df0aed49ee70",
+    "roll_schedule.csv": "1e3b759c803fffedcd841ecc1dcaeab1436cbf2b49d217d1a7bcb88c67f6d74e",
+    "rates_daily.parquet": "3baea1cb8281bab37d8db74fd4a2c9903f4d3c6562d9a5cc454b1a10793149f1"
+  },
+  "synthetic": null,
+  "start": "2003-01-01",
+  "end": "2026-10-30",
+  "settings": {
+    "trend_lookbacks": [
+      63,
+      126,
+      252
+    ],
+    "carry_weights": [
+      0.0,
+      0.35,
+      0.65
+    ],
+    "train_days": 504,
+    "test_days": 126,
+    "target_vol": 0.12,
+    "max_leverage": 8.0,
+    "covariance_window": 63,
+    "covariance_shrinkage": 0.1,
+    "slippage_bps": 0.75,
+    "bootstrap_samples": 500,
+    "bootstrap_block": 21,
+    "bootstrap_seed": 7,
+    "report_start": "2005-01-01"
+  },
+  "panel_start": "2003-01-02",
+  "panel_end": "2026-10-30",
+  "contracts": 44,
+  "sectors": 8,
+  "carry_contracts": 22,
+  "reference_strategies": {
+    "target_vol_each_sleeve": 0.1,
+    "max_leverage": 8.0,
+    "sizing": "global inverse volatility; no sector budgets; blend of separate sleeve returns",
+    "metrics": {
+      "trend": {
+        "ann_return": 0.07215859267919937,
+        "cagr": 0.06812076731956274,
+        "ann_vol": 0.11176275944517361,
+        "sharpe": 0.6456407575959819,
+        "downside_vol": 0.07836338755625148,
+        "sortino": 0.920820231608822,
+        "max_drawdown": -0.22151789393998123,
+        "calmar": 0.3075181246442312,
+        "cvar_5": -0.015671715276372934
+      },
+      "carry": {
+        "ann_return": 0.04574291790045693,
+        "cagr": 0.040767109021169645,
+        "ann_vol": 0.10746487145096427,
+        "sharpe": 0.4256546095747131,
+        "downside_vol": 0.07598967585044604,
+        "sortino": 0.6019622716970496,
+        "max_drawdown": -0.25220260664074257,
+        "calmar": 0.1616442810174502,
+        "cvar_5": -0.01490437413947059
+      },
+      "blend": {
+        "ann_return": 0.058950755289828134,
+        "cagr": 0.057320000031853446,
+        "ann_vol": 0.08004369038664236,
+        "sharpe": 0.7364822262076237,
+        "downside_vol": 0.0567239900818823,
+        "sortino": 1.0392561454991345,
+        "max_drawdown": -0.18479843940140694,
+        "calmar": 0.31017577971720167,
+        "cvar_5": -0.011506762325652514
+      }
+    }
+  },
+  "python": "3.12.10",
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "pyarrow": "26.0.0",
+    "matplotlib": "3.11.2",
+    "typer": "0.27.3"
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "data_source": "synthetic",
+  "data_dir": null,
+  "input_sha256": {},
+  "synthetic": {
+    "days": 6217,
+    "contracts": 44,
+    "seed": 7
+  },
+  "start": "2003-01-01",
+  "end": null,
+  "settings": {
+    "trend_lookbacks": [
+      63,
+      126,
+      252
+    ],
+    "carry_weights": [
+      0.0,
+      0.35,
+      0.65
+    ],
+    "train_days": 504,
+    "test_days": 126,
+    "target_vol": 0.12,
+    "max_leverage": 8.0,
+    "covariance_window": 63,
+    "covariance_shrinkage": 0.1,
+    "slippage_bps": 0.75,
+    "bootstrap_samples": 500,
+    "bootstrap_block": 21,
+    "bootstrap_seed": 7,
+    "report_start": "2005-01-01"
+  },
+  "panel_start": "2003-01-02",
+  "panel_end": "2026-10-30",
+  "contracts": 44,
+  "sectors": 8,
+  "carry_contracts": 22,
+  "reference_strategies": {
+    "target_vol_each_sleeve": 0.1,
+    "max_leverage": 8.0,
+    "sizing": "global inverse volatility; no sector budgets; blend of separate sleeve returns",
+    "metrics": {
+      "trend": {
+        "ann_return": 0.08079670038862598,
+        "cagr": 0.07798745161524256,
+        "ann_vol": 0.10669582936989658,
+        "sharpe": 0.7572620304446703,
+        "downside_vol": 0.07244898192694235,
+        "sortino": 1.115222025757401,
+        "max_drawdown": -0.26666074895807146,
+        "calmar": 0.2924594336435504,
+        "cvar_5": -0.013406935362714163
+      },
+      "carry": {
+        "ann_return": 0.0875925047078308,
+        "cagr": 0.08580615956179649,
+        "ann_vol": 0.1025481265184812,
+        "sharpe": 0.8541599703632312,
+        "downside_vol": 0.06935305346436445,
+        "sortino": 1.2629942062008603,
+        "max_drawdown": -0.22090952242293782,
+        "calmar": 0.388422185792055,
+        "cvar_5": -0.013082422467716385
+      },
+      "blend": {
+        "ann_return": 0.08419460254822839,
+        "cagr": 0.08450206095717006,
+        "ann_vol": 0.07824615181872517,
+        "sharpe": 1.0760222783004605,
+        "downside_vol": 0.05270496883465768,
+        "sortino": 1.5974699238008805,
+        "max_drawdown": -0.15595353491579533,
+        "calmar": 0.5418412670337714,
+        "cvar_5": -0.010039133023217415
+      }
+    }
+  },
+  "python": "3.12.10",
+  "packages": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "pyarrow": "26.0.0",
+    "matplotlib": "3.11.2",
+    "typer": "0.27.3"
+  }
+}

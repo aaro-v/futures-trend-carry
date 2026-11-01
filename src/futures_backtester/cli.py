@@ -49,7 +49,7 @@ def run(
     data_dir: Annotated[
         Path | None, typer.Option(help="Directory containing panel.parquet.")
     ] = None,
-    output_dir: Path = Path("reports/synthetic"),
+    output_dir: Path | None = None,
     start: str = "2003-01-01",
     end: str | None = None,
     report_start: str = "2005-01-01",
@@ -59,6 +59,7 @@ def run(
     bootstrap_samples: int = 500,
 ) -> None:
     """Run training-only parameter selection and save net performance for three sleeves."""
+    output_dir = output_dir or Path("reports") / (data_dir.name if data_dir else "synthetic")
     if data_dir is None:
         panel = make_sample_panel(days=days, contracts=contracts, seed=seed)
         # Apply the same date restriction to generated and file-based panels.
