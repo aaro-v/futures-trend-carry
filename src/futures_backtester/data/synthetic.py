@@ -23,6 +23,8 @@ PROFILE = {
     "livestock": (0.156, 0.32, 0.000, 0.000, 0.34, 3.25),
 }
 RATE_VOLS = {"ZT": 0.015, "ZF": 0.039, "ZN": 0.059, "ZB": 0.106, "UB": 0.142}
+TREND_PREMIUM = 0.50
+CARRY_PREMIUM = 0.15
 
 
 def _ar1(rng: np.random.Generator, days: int, columns: int, rho: float) -> np.ndarray:
@@ -62,8 +64,8 @@ def write_sample_data(
         c = mean + dispersion * (carry_state[:, j] + 0.5 * rng.normal())
         has_carry = dispersion > 0 and spec.root != "BZ"
         carry_score = np.clip(c / max(dispersion, 0.005), -2, 2) if has_carry else 0.0
-        # Annual drift / annual volatility: 0.65 times the latent trend plus 0.20 carry.
-        drift = vol * (0.65 * sector_trend[:, k] + 0.20 * carry_score) / 252
+        # Annual drift / annual volatility, before the log-return variance correction.
+        drift = vol * (TREND_PREMIUM * sector_trend[:, k] + CARRY_PREMIUM * carry_score) / 252
         r = np.expm1(vol / np.sqrt(252) * shock + drift - 0.5 * vol**2 / 252)
         r[0] = 0.0
         price = 100 * np.cumprod(1 + r)

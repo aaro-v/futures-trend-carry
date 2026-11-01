@@ -17,6 +17,7 @@ from futures_backtester.data import (
     make_sample_panel,
     write_sample_data,
 )
+from futures_backtester.data.synthetic import CARRY_PREMIUM, TREND_PREMIUM
 
 app = typer.Typer(help="Trend and carry research on futures.")
 
@@ -79,7 +80,13 @@ def run(
         "data_source": "synthetic" if data_dir is None else "file_panel",
         "data_dir": data_dir.as_posix() if data_dir else None,
         "input_sha256": input_hashes(data_dir) if data_dir else {},
-        "synthetic": {"days": days, "contracts": contracts, "seed": seed}
+        "synthetic": {
+            "days": days,
+            "contracts": contracts,
+            "seed": seed,
+            "trend_premium": TREND_PREMIUM,
+            "carry_premium": CARRY_PREMIUM,
+        }
         if data_dir is None
         else None,
         "start": start,
