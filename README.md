@@ -1,169 +1,97 @@
 # Trend and carry across futures
 
-Do simple trend and carry rules earn a premium after trading costs across a
-diversified futures universe? This project tests that question with daily futures
-histories, explicit sector risk budgets and parameter selection confined to past
-training windows. From January 2005 through October 2026, the combined strategy
-has a net Sharpe ratio of **0.82**, with a maximum drawdown of **22.83%**.
+Do simple trend and carry rules earn a premium after trading costs across
+futures? Over 2005–2026, the combined, trend-only and carry-only net Sharpe ratios
+are 0.82, 0.77 and 0.51. Modeled costs reduce the combined annual return by
+2.3 percentage points, and its 95% bootstrap Sharpe interval is 0.40–1.23.
+Carry covers half the universe, and energy carry ends in 2024.
 
 ## Data
 
-The panel covers 44 US-listed contracts across eight sectors, with global
-underlying exposures. Yahoo Finance supplies front-month price histories;
-[FRED](https://fred.stlouisfed.org/series/DTB3) supplies interest rates and yield
-curves; the [EIA](https://www.eia.gov/dnav/pet/pet_pri_fut_s1_d.htm) supplies energy
-futures settlements. The downloaded histories begin in 2003, with later starts
-for contracts whose listings or usable histories begin later.
+The panel contains 44 US-listed contracts across eight sectors, starting in
+2003. Yahoo Finance supplies front-month prices,
+[FRED](https://fred.stlouisfed.org/series/DTB3) supplies rates and yield curves,
+and the [EIA](https://www.eia.gov/dnav/pet/pet_pri_fut_s1_d.htm) supplies energy
+settlements. Energy returns use nearby contracts; other roll jumps are modeled
+or their switch-day returns are discarded when curves are unavailable.
+Downloaded histories stay local under `data/real/` and are excluded from Git.
 
-The builder reconstructs continuous return indices. Energy uses the EIA's first
-and second contracts, rolling before expiry. Elsewhere, roll jumps are estimated
-with a cost-of-carry model, or the switch-day return is set to zero when no term
-structure is available. These are approximations to holding dated contracts.
-The contract specifications and expiry rules are maintained in
-[`data/market_data`](src/futures_backtester/data/market_data).
-
-Carry is annualized roll yield to a long position: dividend yield less financing
-for equity indices, yield less short rates plus estimated roll-down for
-Treasuries, foreign less US short rates for FX, and the annualized log ratio of
-nearby energy settlements. Twenty-two contracts have some carry history. Carry
-is unavailable for metals, grains, softs, livestock and Brent; the EIA energy
-history ends on April 5, 2024. Missing carry produces a zero carry allocation.
-
-Market-data redistribution rights are not supplied with this repository, so
-downloaded and reconstructed histories stay local under `data/real/`. The builder
-and a synthetic generator are included. Both write the same panel schema and
-companion files, and both use the same loader. Synthetic data approximates sector
-volatility, correlation, carry persistence and trading costs; it does not provide
-evidence of investment performance.
+Carry estimates long-position roll yield from dividends less financing,
+Treasury yield and roll-down, FX rate differentials, or nearby energy prices.
+Synthetic data provides deterministic checks of the engine and reporting.
 
 ## Method
 
-Trend is a trailing price change divided by volatility over the same lookback.
-Carry combines its level divided by daily cross-contract dispersion with a
-centered cross-sectional rank. Each signal is bounded before sizing.
+Trend scales trailing price changes by volatility. Carry combines its level
+scaled by cross-contract dispersion with a centered rank; missing carry gets
+zero carry weight. Contracts use inverse-volatility sizing within sectors,
+with equal forecast sector risk budgets. A trailing covariance estimate targets
+12.0% portfolio volatility. Gross notional is capped at eight times equity.
 
-Contracts use inverse-volatility sizing within each sector. Sector allocations
-then receive equal forecast standalone risk, using a trailing covariance matrix
-shrunk toward its diagonal. One portfolio scale targets 12% annual volatility,
-with gross notional capped at eight times portfolio equity. Equal standalone
-sector budgets do not imply equal realized contributions to portfolio variance;
-cross-sector correlations also matter. There is no additional correlation
-multiplier.
+Walk-forward selection compares trend lookbacks of 63, 126 and 252 sessions
+and carry weights of 0, 0.35 and 0.65. It selects the highest net training Sharpe
+every 126 sessions using the preceding 504 sessions, excluding initial signal
+warm-up. The separate sleeves use a fixed 252-session trend or carry alone.
 
-The only parameter search considers trend lookbacks of 63, 126 and 252 sessions
-and carry blend weights of 0, 0.35 and 0.65. Every 126 sessions, the highest net
-training Sharpe is selected from the preceding 504 sessions. The initial signal
-warm-up is excluded from all candidates' training scores. Loading the 2003
-history provides training and warm-up before reporting begins in 2005.
-
-Targets use information through a session's close and earn the following
-session's return. A contract needs 63 observed daily returns before volatility
-sizing becomes available; future observations never fill its initial estimates.
-Parameter changes use the actual previous holdings when calculating turnover.
-The execution model assumes that closing information can be acted on at that
-close; it does not simulate intraday order submission or fills.
-
-Roll costs apply to the position held through the roll day. Commission and
-slippage apply to traded notional, including entry and liquidation. Commissions
-use the execution day's contract notional rather than a median estimated from
-later years. Slippage is fixed at 0.75 basis points per side of turnover. Returns
-are futures trading P&L relative to equity, without interest on collateral.
-
-The separate trend sleeve fixes its lookback at 252 sessions; the carry sleeve
-uses only the carry signal. Both use the same sector budgets, volatility target
-and cost model as the combined strategy, without parameter selection.
+The baseline acts on closing signals at that close and earns the next session's
+return. Volatility sizing requires 63 daily returns. Rolls are charged on held
+positions; commissions and 0.75-basis-point slippage apply to turnover, including
+entries and exits.
 
 ## Results
 
-The saved real-data run covers January 3, 2005 to October 30, 2026. Annual return
-means the average daily return multiplied by 252; CAGR is saved separately.
+The [saved results](reports/real/summary.csv) cover January 3, 2005 through
+October 30, 2026.
 
-| Strategy | Net annual return | Annual volatility | Sharpe | Maximum drawdown |
+| Strategy | Net annual return | Volatility | Sharpe | Max drawdown |
 |---|---:|---:|---:|---:|
-| Walk-forward trend and carry | 11.28% | 13.72% | 0.82 | −22.83% |
-| Trend only | 10.23% | 13.34% | 0.77 | −24.06% |
-| Carry only | 6.52% | 12.79% | 0.51 | −26.78% |
-
-Source: [`reports/real/summary.csv`](reports/real/summary.csv). The combined
-strategy's gross annual return is 13.60%; modeled costs subtract 2.32 percentage
-points: 0.52 from rolls, 0.57 from commissions and 1.23 from slippage. The
-[cost breakdown](reports/real/costs.csv) reconciles gross and net returns daily.
+| Walk-forward trend and carry | 11.3% | 13.7% | 0.82 | −22.8% |
+| Trend only | 10.2% | 13.3% | 0.77 | −24.1% |
+| Carry only | 6.5% | 12.8% | 0.51 | −26.8% |
 
 ![Net futures strategy equity curves](reports/real/equity_curve.png)
 
-A circular moving-block bootstrap gives a 95% Sharpe interval of **0.40–1.23**,
-using 500 resamples and 21-session blocks. These intervals condition on the
-observed strategy path; parameter selection is not repeated inside each
-resample. The trend sleeve's correlation with an equal-weight basket of equity
-index futures is 0.02.
+The [robustness checks](reports/real/robustness.csv) use the same dates and risk
+settings. Delay and cost scenarios freeze the baseline decisions and targets;
+cost multipliers affect commission and slippage, leaving roll costs unchanged.
+Next-session execution trades the signal from close t at close t+1.
 
-The report directory also contains compounded monthly and yearly returns,
-drawdown episodes, rolling volatility and Sharpe, realized sector risk
-contributions, the complete walk-forward grid with selected rows, and a regime
-table. Configuration, input hashes and package versions are recorded in
-[`run_config.json`](reports/real/run_config.json).
+| Check | Net annual return | Sharpe | Max drawdown |
+|---|---:|---:|---:|
+| Next-session close execution | 9.9% | 0.72 | −25.2% |
+| Trading costs ×2 | 9.5% | 0.69 | −30.4% |
+| Trading costs ×3 | 7.7% | 0.56 | −37.3% |
+| Fixed 252-session trend, carry weight 0.35 | 11.2% | 0.83 | −26.5% |
 
-The same outputs are saved under [`reports/synthetic`](reports/synthetic). Its
-trend and carry sleeve Sharpes are 0.83 and 0.97. A separate, simpler sign-momentum
-and rank-carry reference check is recorded in each run configuration. Synthetic
-carry is stronger than the calibration target. The simulation gives every
-contract a complete history and uses stationary premia, which can make
-diversification and signal persistence more favorable than in the real panel.
+Selection does not improve full-sample Sharpe over the fixed blend. Held gross
+leverage averages 4.4×, with a 95th percentile and maximum of 8.0×. Realized
+sector contributions to gross portfolio variance range from 9.0% for rates to
+15.6% for FX; the [sector breakdown](reports/real/robustness_sectors.csv) records
+every scenario.
 
 ## Limitations
 
-Carry covers only part of the universe and its coverage changes over time.
-Energy carry stops in 2024. Financing and Treasury roll-down are estimated;
-missing curves require some roll-day returns to be discarded. Front-month
-histories cannot establish the exact return available from trading each dated
-contract. Bad-print filtering and fixed data-quality start dates for platinum
-and palladium also affect the reconstructed history.
+Front-month histories and modeled rolls cannot establish exact dated-contract
+returns. Macro series can be revised, and the fixed US-listed universe may have
+survivorship bias. Bad-print filtering and data-quality start dates also affect
+the reconstructed history.
 
-The universe is a fixed list of US-listed contracts. Observed listing dates are
-respected, but the list is not a historical census of all listed and discontinued
-contracts, so survivorship bias remains possible. Macro histories can be
-revised; publication lags and forward filling do not turn them into vintage data.
-
-The volatility target is a forecast, not a constraint on realized risk. Gross
-leverage can be substantial, and the model does not include margin calls,
-market impact, price limits, collateral yield or funding constraints. Costs
-change with prices but do not adapt to market stress. Bootstrap intervals do
-not measure uncertainty about these modeling choices.
+Realized volatility can exceed its target. The model excludes market impact,
+margin calls, price limits, collateral interest and funding constraints.
+Bootstrap intervals use 500 resamples of 21-session blocks and condition on the
+observed strategy path without repeating parameter selection.
 
 ## Reproduce
 
-In PowerShell, create an environment, install the package and rebuild the local
-histories used by the saved run:
+Create an environment with `python -m venv .venv`; on Windows, activate it with
+`.venv\Scripts\Activate.ps1`.
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+```sh
 pip install -e ".[dev,data]"
 futures-backtest build-data --out data/real --end 2026-10-30
-futures-backtest run --data-dir data/real --end 2026-10-30 --output-dir reports/real
+futures-backtest run --data-dir data/real --end 2026-10-30
+futures-backtest robustness
 ```
 
-On macOS or Linux, activate with `source .venv/bin/activate`. Downloads are cached
-under `.cache/market_data`; set `MARKET_DATA_REFRESH=1` to request fresh responses.
-Source revisions or different package versions may change a rebuilt dataset;
-the saved hashes identify the exact inputs used here.
-
-The synthetic run needs no downloads. The first command writes a reusable
-dataset; the second regenerates that same seeded sample through the shared
-serialization and loading path:
-
-```powershell
-futures-backtest sample-data --out data/synthetic
-futures-backtest run --output-dir reports/synthetic
-```
-
-To use an existing dataset, pass `--data-dir data/synthetic`. For a shorter smoke
-run, use `futures-backtest run --days 780 --contracts 12 --bootstrap-samples 25
---output-dir reports/smoke`. Each run writes ten report files and `run_config.json`.
-The standalone synthetic commands need only the base package; downloading real
-histories requires the `data` extra.
-
-Run `ruff check .` and `pytest` for validation. CI builds synthetic data only.
-The tests check schema compatibility, missing carry, late listings, unchanged
-past signals and weights after truncation, sector risk budgets and cost timing.
-The private-data schema comparison is skipped when `data/real/` is absent.
+For synthetic data, run `futures-backtest run --output-dir reports/synthetic`.
+Validate with `ruff check .` and `pytest`; CI uses synthetic data only.
