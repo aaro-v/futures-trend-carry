@@ -5,24 +5,28 @@ import pandas as pd
 
 
 def daily_returns(prices: pd.DataFrame) -> pd.DataFrame:
-    return prices.pct_change().fillna(0.0)
+    return prices.pct_change(fill_method=None)
 
 
 def realized_vol(returns: pd.DataFrame, window: int = 63) -> pd.DataFrame:
-    return returns.rolling(window).std().bfill().clip(lower=1e-4)
+    return returns.rolling(window, min_periods=window).std().clip(lower=1e-4)
 
 
 def trend_signal(prices: pd.DataFrame, lookback: int) -> pd.DataFrame:
-    raw = prices.pct_change(lookback)
-    vol = prices.pct_change().rolling(lookback).std() * np.sqrt(lookback)
+    raw = prices.pct_change(lookback, fill_method=None)
+    vol = daily_returns(prices).rolling(lookback).std() * np.sqrt(lookback)
     signal = raw / vol.replace(0.0, np.nan)
     return signal.replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-3.0, 3.0)
 
 
-def carry_signal(carry: pd.DataFrame, window: int = 126) -> pd.DataFrame:
-    centered = carry.sub(carry.rolling(window).mean())
-    scaled = centered.div(carry.rolling(window).std().replace(0.0, np.nan))
-    return scaled.replace([np.inf, -np.inf], np.nan).fillna(0.0).clip(-3.0, 3.0)
+def carry_signal(carry: pd.DataFrame) -> pd.DataFrame:
+    """Equal blend of carry level / daily cross-contract dispersion and centered rank."""
+    dispersion = carry.std(axis=1).clip(lower=0.005)
+    level = carry.div(dispersion, axis=0).clip(-3.0, 3.0)
+    count = carry.notna().sum(axis=1)
+    rank = carry.rank(axis=1, method="average").sub(1).div((count - 1).replace(0, np.nan), axis=0)
+    rank = (2 * rank - 1).fillna(0.0)
+    return (0.5 * level + 0.5 * rank).where(carry.notna(), 0.0).fillna(0.0)
 
 
 def blended_signal(

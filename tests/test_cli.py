@@ -1,184 +1,49 @@
+import json
+
+import numpy as np
 import pandas as pd
 from typer.testing import CliRunner
 
 from futures_backtester.cli import app
 
 
-def test_cli_generates_outputs(tmp_path) -> None:
+def test_cli_file_and_generated_panels_give_identical_results(tmp_path) -> None:
     runner = CliRunner()
-    out_dir = tmp_path / "reports"
-
+    data = tmp_path / "data"
+    result = runner.invoke(
+        app,
+        ["sample-data", "--out", str(data), "--days", "780", "--contracts", "12", "--seed", "11"],
+    )
+    assert result.exit_code == 0, result.exception
+    output = tmp_path / "reports"
+    result = runner.invoke(
+        app,
+        ["run", "--data-dir", str(data), "--output-dir", str(output), "--bootstrap-samples", "10"],
+    )
+    assert result.exit_code == 0, result.exception
+    config = json.loads((output / "run_config.json").read_text())
+    assert config["data_source"] == "file_panel"
+    assert len(config["input_sha256"]) == 4
+    assert len(list(output.iterdir())) == 11
+    assert (output / "equity_curve.png").stat().st_size > 1000
+    expected = pd.read_csv(output / "summary.csv")
     result = runner.invoke(
         app,
         [
             "run",
             "--output-dir",
-            str(out_dir),
+            str(output),
             "--days",
-            "620",
+            "780",
             "--contracts",
-            "8",
-            "--bootstrap-samples",
-            "25",
+            "12",
             "--seed",
             "11",
+            "--bootstrap-samples",
+            "10",
         ],
     )
-
-    assert result.exit_code == 0, result.output
-    assert (out_dir / "run_config.csv").exists()
-    assert (out_dir / "summary.csv").exists()
-    assert (out_dir / "return_distribution.csv").exists()
-    assert (out_dir / "monthly_returns.csv").exists()
-    assert (out_dir / "rolling_metrics.csv").exists()
-    assert (out_dir / "vol_target_diagnostics.csv").exists()
-    assert (out_dir / "daily_returns.csv").exists()
-    assert (out_dir / "weights.csv").exists()
-    assert (out_dir / "parameter_grid.csv").exists()
-    assert (out_dir / "parameter_grid_summary.csv").exists()
-    assert (out_dir / "sector_exposure.csv").exists()
-    assert (out_dir / "concentration.csv").exists()
-    assert (out_dir / "diversification.csv").exists()
-    assert (out_dir / "correlation_pairs.csv").exists()
-    assert (out_dir / "drawdowns.csv").exists()
-    assert (out_dir / "path_stress.csv").exists()
-    assert (out_dir / "execution_costs.csv").exists()
-    assert (out_dir / "execution_costs_by_contract.csv").exists()
-    assert (out_dir / "cost_drag_by_return_state.csv").exists()
-    assert (out_dir / "rebalance.csv").exists()
-    assert (out_dir / "exposure_changes.csv").exists()
-    assert (out_dir / "signal_contribution.csv").exists()
-    assert (out_dir / "walk_forward_summary.csv").exists()
-    assert (out_dir / "selection_quality.csv").exists()
-    assert (out_dir / "bootstrap_reliability.csv").exists()
-    assert (out_dir / "output_manifest.csv").exists()
-    assert (out_dir / "research_report.md").exists()
-    manifest = pd.read_csv(out_dir / "output_manifest.csv")
-    assert {
-        "artifact",
-        "bytes",
-        "sha256",
-        "rows",
-        "columns",
-    } == set(manifest.columns)
-    assert {
-        "run_config.csv",
-        "summary.csv",
-        "return_distribution.csv",
-        "monthly_returns.csv",
-        "rolling_metrics.csv",
-        "vol_target_diagnostics.csv",
-        "daily_returns.csv",
-        "weights.csv",
-        "walk_forward_selections.csv",
-        "parameter_grid.csv",
-        "parameter_grid_summary.csv",
-        "diversification.csv",
-        "correlation_pairs.csv",
-        "path_stress.csv",
-        "execution_costs_by_contract.csv",
-        "cost_drag_by_return_state.csv",
-        "rebalance.csv",
-        "exposure_changes.csv",
-        "signal_contribution.csv",
-        "selection_quality.csv",
-        "equity_curve.png",
-        "bootstrap_reliability.csv",
-        "research_report.md",
-    } <= set(manifest["artifact"])
-    assert manifest["artifact"].is_unique
-    assert manifest["sha256"].str.fullmatch(r"[0-9a-f]{64}").all()
-    config = pd.read_csv(out_dir / "run_config.csv")
-    assert config.to_dict("records") == [
-        {
-            "days": 620,
-            "contracts": 8,
-            "seed": 11,
-            "target_vol": 0.12,
-            "slippage_bps": 0.75,
-            "bootstrap_samples": 25,
-            "rolling_window": 252,
-            "rolling_min_periods": 63,
-            "train_days": 504,
-            "test_days": 126,
-            "trend_lookbacks": "63|126|252",
-            "carry_weights": "0|0.35|0.65",
-        }
-    ]
-    config_row = manifest.set_index("artifact").loc["run_config.csv"]
-    assert config_row["rows"] == 1
-    assert config_row["columns"] == 12
-    summary_row = manifest.set_index("artifact").loc["summary.csv"]
-    assert summary_row["rows"] == 1
-    assert summary_row["columns"] >= 8
-    distribution_row = manifest.set_index("artifact").loc["return_distribution.csv"]
-    assert distribution_row["rows"] == 1
-    assert distribution_row["columns"] == 12
-    monthly_row = manifest.set_index("artifact").loc["monthly_returns.csv"]
-    assert monthly_row["rows"] >= 1
-    assert monthly_row["columns"] == 7
-    diversification_row = manifest.set_index("artifact").loc["diversification.csv"]
-    assert diversification_row["rows"] == 1
-    assert diversification_row["columns"] == 7
-    correlation_pair_row = manifest.set_index("artifact").loc["correlation_pairs.csv"]
-    assert correlation_pair_row["rows"] >= 1
-    assert correlation_pair_row["columns"] == 8
-    cost_drag_row = manifest.set_index("artifact").loc["cost_drag_by_return_state.csv"]
-    assert cost_drag_row["rows"] >= 1
-    assert cost_drag_row["columns"] == 7
-    rolling_row = manifest.set_index("artifact").loc["rolling_metrics.csv"]
-    assert rolling_row["rows"] >= 1
-    assert rolling_row["columns"] == 7
-    vol_target_row = manifest.set_index("artifact").loc["vol_target_diagnostics.csv"]
-    assert vol_target_row["rows"] == 1
-    assert vol_target_row["columns"] == 13
-    image_row = manifest.set_index("artifact").loc["equity_curve.png"]
-    assert pd.isna(image_row["rows"])
-    selections = (out_dir / "walk_forward_selections.csv").read_text(encoding="utf-8")
-    assert "test_sharpe" in selections
-    assert "test_max_drawdown" in selections
-    parameter_grid = pd.read_csv(out_dir / "parameter_grid.csv")
-    parameter_grid_summary = pd.read_csv(out_dir / "parameter_grid_summary.csv")
-    assert "is_selected" in parameter_grid
-    assert parameter_grid["is_selected"].sum() >= 1
-    assert {
-        "selection_rate",
-        "avg_test_sharpe",
-        "positive_test_sharpe_rate",
-    } <= set(parameter_grid_summary.columns)
-    report = (out_dir / "research_report.md").read_text(encoding="utf-8")
-    assert "Run configuration" in report
-    assert "seed 11" in report
-    assert "Sortino" in report
-    assert "Calmar" in report
-    assert "Daily hit rate" in report
-    assert "Positive months" in report
-    assert "Monthly returns" in report
-    assert "rolling Sharpe" in report
-    assert "Realized volatility target diagnostic" in report
-    assert "Gross-vol diversification ratio" in report
-    assert "Walk-forward validation" in report
-    assert "Parameter switch rate" in report
-    assert "Train-to-test Sharpe degradation" in report
-    assert "Selection quality diagnostics" in report
-    assert "Average selected-candidate Sharpe regret" in report
-    assert "Parameter grid diagnostics" in report
-    assert "Best average test Sharpe candidate" in report
-    assert "Drawdown diagnostics" in report
-    assert "Path stress diagnostics" in report
-    assert "Worst 21-day path" in report
-    assert "Bootstrap reliability" in report
-    assert "Positive Sharpe probability" in report
-    assert "Contract cost diagnostics" in report
-    assert "Highest annualized contract cost" in report
-    assert "Cost drag by return state" in report
-    assert "Negative-return day annualized cost drag" in report
-    assert "Rebalance diagnostics" in report
-    assert "Average rebalance turnover" in report
-    assert "Exposure change diagnostics" in report
-    assert "Average active contracts" in report
-    assert "Signal contribution diagnostics" in report
-    assert "Trend-attributed gross return" in report
-    assert "Diversification diagnostics" in report
-    assert "Correlation pair diagnostics" in report
-    assert "Largest weighted-leg covariance pair" in report
+    assert result.exit_code == 0, result.exception
+    actual = pd.read_csv(output / "summary.csv")
+    np.testing.assert_allclose(actual.select_dtypes("number"), expected.select_dtypes("number"))
+    assert json.loads((output / "run_config.json").read_text())["data_source"] == "synthetic"

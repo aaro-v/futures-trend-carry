@@ -9,4 +9,8 @@ build/
 dist/
 reports/generated/
 data/cache/
+data/real/
+data/synthetic/
+.cache/
+_handoff/
 .DS_Store

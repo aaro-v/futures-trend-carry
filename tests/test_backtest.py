@@ -1,306 +1,71 @@
-import numpy as np
-import pandas as pd
+from dataclasses import replace
 
-from futures_backtester.backtest import BacktestSettings, run_backtest
+import numpy as np
+import pytest
+from pandas.testing import assert_frame_equal, assert_series_equal
+
+from futures_backtester import BacktestSettings, run_backtest
 from futures_backtester.data import make_sample_panel
-from futures_backtester.portfolio import net_strategy_returns
+from futures_backtester.portfolio import return_components
 from futures_backtester.signals import daily_returns
 
 
-def test_run_backtest_outputs_reviewer_artifacts() -> None:
-    panel = make_sample_panel(days=780, contracts=12, seed=5)
-    settings = BacktestSettings(
-        trend_lookbacks=(63, 126),
-        carry_weights=(0.0, 0.5),
-        train_days=252,
-        test_days=126,
-        bootstrap_samples=40,
-    )
-    result = run_backtest(panel, settings)
-
-    assert not result.returns.empty
-    assert result.weights.shape[0] == len(result.returns)
-    assert not result.selections.empty
-    assert not result.parameter_grid.empty
-    assert {
-        "start",
-        "end",
-        "trend_lookback",
-        "carry_weight",
-        "train_sharpe",
-        "test_ann_return",
-        "test_sharpe",
-        "test_max_drawdown",
-    } <= set(result.selections.columns)
-    assert {
-        "start",
-        "end",
-        "trend_lookback",
-        "carry_weight",
-        "is_selected",
-        "train_sharpe",
-        "test_ann_return",
-        "test_sharpe",
-        "test_max_drawdown",
-    } <= set(result.parameter_grid.columns)
-    expected_columns = {
-        "ann_return",
-        "ann_vol",
-        "sharpe",
-        "downside_vol",
-        "sortino",
-        "max_drawdown",
-        "calmar",
-        "cvar_5",
-    }
-    assert expected_columns <= set(result.summary.columns)
-    assert {
-        "observations",
-        "hit_rate",
-        "avg_gain",
-        "avg_loss",
-        "gain_loss_ratio",
-        "best_day",
-        "worst_day",
-        "skew",
-        "excess_kurtosis",
-        "positive_month_rate",
-        "best_month",
-        "worst_month",
-    } <= set(result.return_distribution.columns)
-    assert {
-        "window_days",
-        "observations",
-        "ann_return",
-        "ann_vol",
-        "sharpe",
-        "max_drawdown",
-    } <= set(result.rolling_metrics.columns)
-    assert not result.rolling_metrics.empty
-    assert not result.regime_metrics.empty
-    assert not result.sector_exposure.empty
-    assert {"avg_gross_weight", "avg_net_weight", "max_gross_weight", "days_active"} <= set(
-        result.sector_exposure.columns
-    )
-    assert {
-        "avg_gross_weight",
-        "avg_max_contract_gross_share",
-        "max_contract_gross_share",
-        "avg_top_5_gross_share",
-        "avg_hhi",
-        "effective_contract_count",
-    } <= set(result.concentration.columns)
-    assert {
-        "ann_portfolio_gross_vol",
-        "ann_sum_component_vol",
-        "diversification_ratio",
-        "vol_reduction",
-        "avg_pairwise_corr",
-        "max_pairwise_corr",
-        "contracts_with_risk",
-    } <= set(result.diversification.columns)
-    assert {
-        "start",
-        "trough",
-        "recovery",
-        "depth",
-        "length_days",
-        "recovery_days",
-    } <= set(result.drawdowns.columns)
-    assert {
-        "horizon_days",
-        "rank",
-        "start",
-        "end",
-        "cumulative_return",
-        "ann_return",
-        "ann_vol",
-        "sharpe",
-        "max_drawdown",
-    } <= set(result.path_stress.columns)
-    assert not result.path_stress.empty
-    assert {
-        "avg_daily_turnover",
-        "annualized_turnover",
-        "ann_roll_cost",
-        "ann_commission_cost",
-        "ann_slippage_cost",
-        "ann_trade_cost",
-        "ann_total_cost",
-        "max_daily_cost",
-    } <= set(result.execution_costs.columns)
-    assert {
-        "avg_abs_weight",
-        "avg_daily_turnover",
-        "annualized_turnover",
-        "ann_roll_cost",
-        "ann_commission_cost",
-        "ann_slippage_cost",
-        "ann_trade_cost",
-        "ann_total_cost",
-        "max_daily_cost",
-    } <= set(result.execution_costs_by_contract.columns)
-    assert result.execution_costs_by_contract.index.name == "contract"
-    assert {
-        "observations",
-        "rebalance_days",
-        "rebalance_day_rate",
-        "avg_daily_turnover",
-        "avg_rebalance_turnover",
-        "median_rebalance_turnover",
-        "p95_rebalance_turnover",
-        "max_rebalance_turnover",
-        "avg_days_between_rebalances",
-        "max_contract_turnover_share",
-    } <= set(result.rebalance.columns)
-    assert {
-        "observations",
-        "avg_gross_exposure",
-        "avg_net_exposure",
-        "avg_abs_net_exposure",
-        "avg_daily_gross_exposure_change",
-        "max_daily_gross_exposure_change",
-        "gross_exposure_change_vol",
-        "avg_active_contracts",
-        "avg_entries",
-        "avg_exits",
-        "avg_sign_flips",
-        "max_sign_flips",
-    } <= set(result.exposure_changes.columns)
-    assert {
-        "ann_gross_return",
-        "ann_trend_attributed_return",
-        "ann_carry_attributed_return",
-        "ann_unassigned_return",
-        "avg_abs_trend_component_share",
-        "avg_abs_carry_component_share",
-        "trend_dominant_gross_share",
-        "carry_dominant_gross_share",
-        "trend_carry_agreement_rate",
-    } <= set(result.signal_contribution.columns)
-    assert {
-        "windows",
-        "unique_parameter_sets",
-        "most_common_trend_lookback",
-        "most_common_carry_weight",
-        "parameter_switch_rate",
-        "avg_trend_lookback_change",
-        "avg_carry_weight_change",
-        "avg_train_sharpe",
-        "avg_test_sharpe",
-        "sharpe_degradation",
-        "positive_test_sharpe_rate",
-        "avg_test_max_drawdown",
-        "worst_test_max_drawdown",
-    } <= set(result.walk_forward_summary.columns)
-    assert {
-        "trend_lookback",
-        "carry_weight",
-        "windows",
-        "selection_count",
-        "selection_rate",
-        "avg_train_sharpe",
-        "avg_test_ann_return",
-        "avg_test_sharpe",
-        "sharpe_degradation",
-        "positive_test_sharpe_rate",
-        "avg_test_max_drawdown",
-        "worst_test_max_drawdown",
-    } <= set(result.parameter_grid_summary.columns)
-    assert {
-        "windows",
-        "avg_selected_test_sharpe",
-        "avg_best_available_test_sharpe",
-        "avg_test_sharpe_regret",
-        "max_test_sharpe_regret",
-        "zero_regret_window_rate",
-        "avg_selected_rank",
-        "worst_selected_rank",
-    } <= set(result.selection_quality.columns)
-    assert result.parameter_grid["is_selected"].sum() == len(result.selections)
-    assert result.parameter_grid_summary["selection_count"].sum() == len(result.selections)
-    assert set(result.bootstrap_bands.index) == {"p05", "p50", "p95"}
-    assert {
-        "samples",
-        "block_days",
-        "observations",
-        "prob_positive_ann_return",
-        "prob_positive_sharpe",
-        "prob_positive_sortino",
-        "prob_drawdown_below_limit",
-        "drawdown_limit",
-        "median_sharpe",
-        "median_max_drawdown",
-        "median_cvar_5",
-    } <= set(result.bootstrap_reliability.columns)
-    assert np.isfinite(result.summary.to_numpy()).all()
-    assert np.isfinite(result.return_distribution.to_numpy()).all()
-    assert np.isfinite(result.rolling_metrics.to_numpy()).all()
-    assert np.isfinite(
-        result.selections[["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]]
-        .to_numpy()
-        .astype(float)
-    ).all()
-    assert np.isfinite(result.concentration.to_numpy()).all()
-    assert np.isfinite(result.diversification.to_numpy()).all()
-    assert np.isfinite(result.drawdowns[["depth", "length_days"]].to_numpy()).all()
-    assert np.isfinite(
-        result.path_stress[
-            ["horizon_days", "rank", "cumulative_return", "ann_return", "ann_vol", "sharpe"]
-        ].to_numpy()
-    ).all()
-    assert np.isfinite(result.execution_costs.to_numpy()).all()
-    assert np.isfinite(result.execution_costs_by_contract.to_numpy()).all()
-    assert np.isfinite(result.rebalance.to_numpy()).all()
-    assert np.isfinite(result.exposure_changes.to_numpy()).all()
-    assert np.isfinite(result.signal_contribution.to_numpy()).all()
-    assert np.isfinite(result.walk_forward_summary.to_numpy()).all()
-    assert np.isfinite(result.selection_quality.to_numpy()).all()
-    assert np.isfinite(
-        result.parameter_grid[
-            ["train_sharpe", "test_ann_return", "test_sharpe", "test_max_drawdown"]
-        ]
-        .to_numpy()
-        .astype(float)
-    ).all()
-    assert np.isfinite(result.parameter_grid_summary.to_numpy()).all()
-    assert np.isfinite(result.bootstrap_reliability.to_numpy()).all()
+@pytest.fixture(scope="module")
+def research_run():
+    panel = make_sample_panel(days=940, contracts=24, seed=5)
+    # A late listing and an interruption must not inherit future volatility.
+    panel.prices.iloc[:600, -1] = np.nan
+    panel.carry.iloc[:600, -1] = np.nan
+    settings = BacktestSettings(bootstrap_samples=10)
+    return panel, settings, run_backtest(panel, settings)
 
 
-def test_walk_forward_returns_reconcile_to_stitched_portfolio_weights() -> None:
-    panel = make_sample_panel(days=780, contracts=8, seed=9)
-    settings = BacktestSettings(
-        trend_lookbacks=(63, 126),
-        carry_weights=(0.0, 0.5),
-        train_days=252,
-        test_days=63,
-        bootstrap_samples=20,
-    )
-
-    result = run_backtest(panel, settings)
-
-    parameter_switches = (
-        result.selections[["trend_lookback", "carry_weight"]]
-        .diff()
-        .ne(0.0)
-        .any(axis=1)
-        .iloc[1:]
-    )
-    assert parameter_switches.any()
-
-    prior_date = panel.prices.index[settings.train_days - 1]
-    weights = pd.concat(
-        [
-            pd.DataFrame(0.0, index=[prior_date], columns=result.weights.columns),
-            result.weights,
-        ]
-    )
-    expected = net_strategy_returns(
-        weights,
-        daily_returns(panel.prices).loc[weights.index],
-        panel.roll_cost_bps.loc[weights.index],
+def test_stitched_returns_reconcile_and_costs_reduce_gross(research_run) -> None:
+    panel, settings, result = research_run
+    expected = return_components(
+        result.weights,
+        daily_returns(panel.prices),
+        panel.roll_cost_bps,
         panel.commission_bps,
-        slippage_bps=settings.slippage_bps,
-    ).iloc[1:]
+        settings.slippage_bps,
+    )
+    assert_series_equal(result.returns, expected.net_return.loc[result.returns.index])
+    assert result.weights.iloc[:663, -1].eq(0).all()
+    assert np.isfinite(result.weights.to_numpy()).all()
+    assert (result.weights.abs().sum(axis=1) <= settings.max_leverage + 1e-10).all()
+    costs = result.costs
+    np.testing.assert_allclose(costs.ann_gross_return - costs.ann_net_return, costs.ann_total_cost)
+    for _, group in result.sectors.groupby("strategy"):
+        assert group.risk_contribution.sum() == pytest.approx(1)
+    assert result.sleeve_weights["carry"].loc[:, panel.carry.isna().all()].eq(0).all().all()
 
-    assert np.allclose(result.returns, expected)
+
+@pytest.mark.parametrize("cut", [756, 801])
+def test_truncation_does_not_change_past_weights_or_returns(research_run, cut) -> None:
+    panel, settings, full = research_run
+    short = replace(
+        panel,
+        **{
+            name: getattr(panel, name).iloc[:cut]
+            for name in ("prices", "carry", "roll_cost_bps", "commission_bps")
+        },
+    )
+    result = run_backtest(short, settings)
+    assert_frame_equal(full.weights.iloc[:cut], result.weights)
+    assert_series_equal(full.returns.loc[result.returns.index], result.returns)
+    for name in ("trend", "carry"):
+        assert_frame_equal(full.sleeve_weights[name].iloc[:cut], result.sleeve_weights[name])
+
+
+def test_selection_uses_only_training_scores(research_run) -> None:
+    _, _, result = research_run
+    for _, window in result.parameter_grid.groupby("decision_date"):
+        selected = window.loc[window.is_selected]
+        assert len(selected) == 1
+        assert selected.train_sharpe.iloc[0] == window.train_sharpe.max()
+        assert (window.train_end < window.start).all()
+
+
+def test_short_panel_raises_a_clear_error() -> None:
+    with pytest.raises(ValueError, match="Not enough history"):
+        run_backtest(make_sample_panel(days=300, contracts=2))

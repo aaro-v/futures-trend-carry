@@ -2,78 +2,103 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from numba import njit
 
 
-@njit(cache=True)
-def _turnover_costs(
-    weights: np.ndarray,
-    commission_bps: np.ndarray,
-    slippage_bps: float,
+def rolling_covariance(
+    returns: pd.DataFrame, window: int = 63, shrinkage: float = 0.10
 ) -> np.ndarray:
-    rows, cols = weights.shape
-    costs = np.zeros(rows)
-    for i in range(1, rows):
-        day_cost = 0.0
-        for j in range(cols):
-            turnover = abs(weights[i, j] - weights[i - 1, j])
-            day_cost += turnover * (commission_bps[j] + slippage_bps) / 10_000.0
-        costs[i] = day_cost
-    return costs
+    """Trailing daily covariance, shrunk toward its diagonal; no future filling.
+
+    Missing returns enter as zero only for covariance calculation. The separate
+    full-history volatility eligibility rule keeps newly listed contracts out.
+    """
+    values = returns.fillna(0.0).to_numpy()
+    n, m = values.shape
+    cross = np.einsum("ti,tj->tij", values, values)
+    cumulative = np.concatenate([np.zeros((1, m, m)), cross.cumsum(axis=0)])
+    totals = np.vstack([np.zeros(m), values.cumsum(axis=0)])
+    cov = np.zeros((n, m, m))
+    if n >= window:
+        sums = totals[window:] - totals[:-window]
+        products = cumulative[window:] - cumulative[:-window]
+        cov[window - 1 :] = (products - np.einsum("ti,tj->tij", sums, sums) / window) / (window - 1)
+    diagonal = np.arange(m)
+    cov *= 1 - shrinkage
+    cov[:, diagonal, diagonal] /= 1 - shrinkage
+    return cov
 
 
-def risk_parity_weights(
-    signal: pd.DataFrame,
-    vol: pd.DataFrame,
-    max_gross: float = 2.5,
+def inverse_volatility_weights(
+    signal: pd.DataFrame, vol: pd.DataFrame, sectors: pd.Series, covariance: np.ndarray
 ) -> pd.DataFrame:
-    inv_vol = 1.0 / vol.replace(0.0, np.nan)
-    raw = signal.clip(-1.0, 1.0) * inv_vol
-    gross = raw.abs().sum(axis=1).replace(0.0, np.nan)
-    weights = raw.div(gross, axis=0).fillna(0.0)
-    return weights.clip(-max_gross, max_gross)
-
-
-def correlation_scaler(returns: pd.DataFrame, window: int = 126, floor: float = 0.35) -> pd.Series:
-    avg_corr = []
-    for i in range(len(returns)):
-        if i < window:
-            avg_corr.append(0.25)
-            continue
-        corr = returns.iloc[i - window : i].corr().to_numpy()
-        upper = corr[np.triu_indices_from(corr, k=1)]
-        avg_corr.append(float(np.nanmean(upper)))
-    avg = pd.Series(avg_corr, index=returns.index).clip(lower=0.0)
-    return (1.0 / np.sqrt(1.0 + avg * 5.0)).clip(lower=floor, upper=1.0)
+    """Inverse vol within sectors, equal forecast standalone risk across active sectors."""
+    raw = (signal.clip(-1, 1) / vol).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    values = raw.to_numpy().copy()
+    labels = sectors.reindex(raw.columns)
+    for sector in labels.unique():
+        members = np.flatnonzero(labels.to_numpy() == sector)
+        w = values[:, members]
+        block = covariance[:, members][:, :, members]
+        risk = np.sqrt(np.maximum(np.einsum("ti,tij,tj->t", w, block, w), 0))
+        values[:, members] = np.divide(
+            w, risk[:, None], out=np.zeros_like(w), where=risk[:, None] > 1e-12
+        )
+    gross = np.abs(values).sum(axis=1)
+    values = np.divide(values, gross[:, None], out=np.zeros_like(values), where=gross[:, None] > 0)
+    return pd.DataFrame(values, index=signal.index, columns=signal.columns)
 
 
 def apply_vol_target(
     base_weights: pd.DataFrame,
-    returns: pd.DataFrame,
+    covariance: np.ndarray,
     target_vol: float = 0.12,
-    window: int = 63,
-    max_leverage: float = 3.0,
+    max_leverage: float = 8.0,
 ) -> pd.DataFrame:
-    pre_returns = (base_weights.shift(1).fillna(0.0) * returns).sum(axis=1)
-    realized = pre_returns.rolling(window).std() * np.sqrt(252)
-    leverage = (target_vol / realized.replace(0.0, np.nan)).clip(upper=max_leverage).fillna(1.0)
-    leverage *= correlation_scaler(returns)
-    return base_weights.mul(leverage, axis=0)
+    """One covariance-based scale, capped at max_leverage times gross notional / NAV."""
+    w = base_weights.to_numpy()
+    forecast = np.sqrt(np.maximum(np.einsum("ti,tij,tj->t", w, covariance, w), 0) * 252)
+    leverage = np.divide(target_vol, forecast, out=np.zeros_like(forecast), where=forecast > 1e-12)
+    return base_weights.mul(np.minimum(leverage, max_leverage), axis=0)
+
+
+def return_components(
+    weights: pd.DataFrame,
+    returns: pd.DataFrame,
+    roll_cost_bps: pd.DataFrame,
+    commission_bps: pd.Series | pd.DataFrame,
+    slippage_bps: float = 0.75,
+) -> pd.DataFrame:
+    """Targets at close t earn t+1 returns; their execution cost is booked on t+1.
+
+    The opening trade is from zero. A roll is charged on the position held on
+    that day, including a position closed at that day's close.
+    """
+    held = weights.shift(1).fillna(0.0)
+    turnover = held.diff().fillna(held).abs()
+    execution_commission = (
+        commission_bps.shift(1) if isinstance(commission_bps, pd.DataFrame) else commission_bps
+    )
+    out = pd.DataFrame(
+        {
+            "gross_return": (held * returns).sum(axis=1),
+            "roll_cost": (held.abs() * roll_cost_bps / 10_000).sum(axis=1),
+            "commission_cost": (turnover * execution_commission / 10_000).sum(axis=1),
+            "slippage_cost": turnover.sum(axis=1) * slippage_bps / 10_000,
+            "turnover": turnover.sum(axis=1),
+        }
+    )
+    out["total_cost"] = out[["roll_cost", "commission_cost", "slippage_cost"]].sum(axis=1)
+    out["net_return"] = out["gross_return"] - out["total_cost"]
+    return out
 
 
 def net_strategy_returns(
     weights: pd.DataFrame,
     returns: pd.DataFrame,
     roll_cost_bps: pd.DataFrame,
-    commission_bps: pd.Series,
+    commission_bps: pd.Series | pd.DataFrame,
     slippage_bps: float = 0.75,
 ) -> pd.Series:
-    aligned_weights = weights.shift(1).fillna(0.0)
-    gross = (aligned_weights * returns).sum(axis=1)
-    roll_cost = (aligned_weights.abs() * roll_cost_bps / 10_000.0).sum(axis=1)
-    trade_cost = _turnover_costs(
-        weights.to_numpy(dtype=float),
-        commission_bps.reindex(weights.columns).to_numpy(dtype=float),
-        slippage_bps,
-    )
-    return gross - roll_cost - pd.Series(trade_cost, index=weights.index)
+    return return_components(weights, returns, roll_cost_bps, commission_bps, slippage_bps)[
+        "net_return"
+    ]

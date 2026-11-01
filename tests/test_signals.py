@@ -1,27 +1,32 @@
 import numpy as np
+import pandas as pd
+from pandas.testing import assert_frame_equal
 
 from futures_backtester.data import make_sample_panel
-from futures_backtester.signals import (
-    blended_signal,
-    carry_signal,
-    daily_returns,
-    realized_vol,
-    trend_signal,
-)
+from futures_backtester.signals import carry_signal, daily_returns, realized_vol, trend_signal
 
 
-def test_signals_are_finite_and_aligned() -> None:
-    panel = make_sample_panel(days=300, contracts=8, seed=3)
+def test_carry_levels_and_missing_coverage() -> None:
+    carry = pd.DataFrame({"positive": [0.03] * 160, "negative": [-0.03] * 160, "missing": np.nan})
+    signal = carry_signal(carry)
+    assert (signal["positive"] > 0).all()
+    assert (signal["negative"] < 0).all()
+    assert (signal["missing"] == 0).all()
+    assert (carry_signal(carry * np.nan) == 0).all().all()
 
-    returns = daily_returns(panel.prices)
-    vol = realized_vol(returns)
-    trend = trend_signal(panel.prices, lookback=63)
-    carry = carry_signal(panel.carry)
-    blend = blended_signal(panel.prices, panel.carry, trend_lookback=63, carry_weight=0.5)
 
-    assert returns.shape == panel.prices.shape
-    assert vol.shape == panel.prices.shape
-    assert trend.index.equals(panel.prices.index)
-    assert carry.columns.equals(panel.prices.columns)
-    assert np.isfinite(blend.to_numpy()).all()
-    assert blend.abs().max().max() <= 3.0
+def test_volatility_requires_observed_history_for_each_contract() -> None:
+    panel = make_sample_panel(days=200, contracts=2)
+    prices = panel.prices.copy()
+    prices.iloc[:90, 1] = np.nan
+    vol = realized_vol(daily_returns(prices))
+    assert vol.iloc[:63, 0].isna().all()
+    assert vol.iloc[:153, 1].isna().all()
+    assert vol.iloc[153:, 1].notna().all()
+
+
+def test_signals_are_invariant_to_truncation() -> None:
+    panel = make_sample_panel(days=420, contracts=25)
+    for function in (lambda p: realized_vol(daily_returns(p)), lambda p: trend_signal(p, 126)):
+        assert_frame_equal(function(panel.prices).iloc[:300], function(panel.prices.iloc[:300]))
+    assert_frame_equal(carry_signal(panel.carry).iloc[:300], carry_signal(panel.carry.iloc[:300]))
