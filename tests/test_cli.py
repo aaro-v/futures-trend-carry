@@ -28,6 +28,19 @@ def test_cli_file_and_generated_panels_give_identical_results(tmp_path, monkeypa
     assert len(list(output.iterdir())) == 11
     assert (output / "equity_curve.png").stat().st_size > 1000
     expected = pd.read_csv(output / "summary.csv")
+    original_summary = (output / "summary.csv").read_bytes()
+    result = runner.invoke(app, ["robustness", "--report-dir", str(output)])
+    assert result.exit_code == 0, result.exception
+    assert (output / "summary.csv").read_bytes() == original_summary
+    assert (output / "robustness_sectors.csv").is_file()
+    checks = pd.read_csv(output / "robustness.csv")
+    assert checks.scenario.tolist() == [
+        "baseline",
+        "next_session_close",
+        "trading_costs_2x",
+        "trading_costs_3x",
+        "fixed_blend_252_0.35",
+    ]
     result = runner.invoke(
         app,
         [

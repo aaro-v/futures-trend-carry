@@ -1,0 +1,46 @@
+{
+  "baseline_config_sha256": "aed4512db3b0341706829f5c6c573bac48a4566e629ec7e64d869c1f9904dc05",
+  "input_sha256": {
+    "panel.parquet": "c4dabdcd4b592e3ce02ecfc844b607d3c574badd025e88581b3fc77a1f69cfe1",
+    "contracts_resolved.csv": "77d13cb695f3dd0700a6e621ee3646ad3a82ca9b5b77eb588471df0aed49ee70",
+    "roll_schedule.csv": "1e3b759c803fffedcd841ecc1dcaeab1436cbf2b49d217d1a7bcb88c67f6d74e",
+    "rates_daily.parquet": "3baea1cb8281bab37d8db74fd4a2c9903f4d3c6562d9a5cc454b1a10793149f1"
+  },
+  "settings": {
+    "trend_lookbacks": [
+      63,
+      126,
+      252
+    ],
+    "carry_weights": [
+      0.0,
+      0.35,
+      0.65
+    ],
+    "train_days": 504,
+    "test_days": 126,
+    "target_vol": 0.12,
+    "max_leverage": 8.0,
+    "covariance_window": 63,
+    "covariance_shrinkage": 0.1,
+    "slippage_bps": 0.75,
+    "bootstrap_samples": 500,
+    "bootstrap_block": 21,
+    "bootstrap_seed": 7,
+    "report_start": "2005-01-01"
+  },
+  "selection": "Baseline decisions and targets frozen for execution and cost scenarios.",
+  "execution": "Delay 1: signal at close t, trade at close t+1, earn return t+2.",
+  "costs": "Multiply commission and slippage only; roll_cost_bps remains unchanged.",
+  "fixed_blend": {
+    "trend_lookback": 252,
+    "carry_weight": 0.35
+  },
+  "gross_leverage": "Sum of absolute held notional weights on each P&L date.",
+  "sector_risk": "Sector covariance with gross P&L divided by portfolio variance.",
+  "carry_coverage": {
+    "contracts_with_history": 22,
+    "universe_contracts": 44,
+    "energy_last_available_date": "2024-04-05"
+  }
+}

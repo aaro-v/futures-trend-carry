@@ -105,5 +105,14 @@ def run(
     typer.echo(f"Wrote reports to {output_dir}")
 
 
+@app.command()
+def robustness(report_dir: Path = Path("reports/real"), data_dir: Path | None = None) -> None:
+    """Check execution, costs and a fixed blend against an unchanged saved baseline."""
+    from futures_backtester.backtesting.robustness import write_robustness
+
+    summary = write_robustness(report_dir, data_dir)
+    typer.echo(summary[["scenario", "ann_return", "sharpe", "max_drawdown"]].to_string(index=False))
+
+
 if __name__ == "__main__":
     app()
